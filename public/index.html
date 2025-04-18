@@ -34,14 +34,17 @@
             </div>
             
             <div id="loading" class="mt-6 hidden">
-                <div class="flex items-center justify-center">
-                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                    <span class="ml-2 text-gray-600">Analyzing...</span>
+                <div class="flex flex-col items-center justify-center p-6 bg-gray-50 rounded-md">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+                    <span class="text-gray-600 text-center">Analyzing fault code... This may take a moment.</span>
+                    <div class="mt-4 w-full bg-gray-200 rounded-full h-2.5">
+                        <div class="bg-blue-600 h-2.5 rounded-full loading-bar"></div>
+                    </div>
                 </div>
             </div>
             
             <div class="mt-6 text-sm text-gray-500">
-                <p>This application uses a local database of common fault codes. If your specific code is not found, general troubleshooting advice will be provided.</p>
+                <p>This application provides detailed analysis of fault codes for various equipment types.</p>
                 <p class="mt-2">Supported fault codes include: P0300, P0171, P0420, EGR, APU, E01, E02</p>
             </div>
         </div>

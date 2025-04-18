@@ -34,9 +34,15 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Show loading indicator
+        // Show loading indicator with a longer message
         loadingDiv.classList.remove('hidden');
         resultDiv.classList.add('hidden');
+        
+        // Update loading message to indicate AI analysis
+        const loadingMessage = loadingDiv.querySelector('span');
+        if (loadingMessage) {
+            loadingMessage.textContent = 'Analyzing fault code... This may take a moment.';
+        }
 
         try {
             const response = await fetch('/api/analyze', {

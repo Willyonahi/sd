@@ -50,4 +50,15 @@ button:disabled {
 
 .animate-spin {
     animation: spin 1s linear infinite;
+}
+
+/* Loading bar animation */
+@keyframes loading {
+    0% { width: 0%; }
+    100% { width: 100%; }
+}
+
+.loading-bar {
+    animation: loading 2s ease-in-out infinite;
+    width: 0%;
 } 

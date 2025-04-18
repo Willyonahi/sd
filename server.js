@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const OpenAI = require('openai');
 
 const app = express();
 const port = process.env.PORT || 10000;
@@ -10,6 +11,21 @@ const port = process.env.PORT || 10000;
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Initialize OpenAI client if API key is available
+let openai = null;
+const openaiApiKey = process.env.OPENAI_API_KEY;
+
+if (openaiApiKey) {
+  try {
+    openai = new OpenAI({
+      apiKey: openaiApiKey
+    });
+    console.log('OpenAI client initialized successfully');
+  } catch (error) {
+    console.error('Error initializing OpenAI client:', error);
+  }
+}
 
 // Local database of common fault codes
 const faultCodeDatabase = {
@@ -160,7 +176,7 @@ app.post('/api/analyze', async (req, res) => {
     // Normalize the code to uppercase for case-insensitive matching
     const normalizedCode = code.toUpperCase();
     
-    // Check if we have the code in our database
+    // First check if we have the code in our database
     if (faultCodeDatabase[normalizedCode]) {
       const faultInfo = faultCodeDatabase[normalizedCode];
       
@@ -183,8 +199,23 @@ Note: This information is provided as a general guide. Always consult your equip
       
       res.json({ analysis });
     } else {
-      // If code not found, provide a generic response
-      const analysis = `
+      // If code not found in database, try to use ChatGPT if available
+      if (openai) {
+        try {
+          const prompt = `Analyze the following fault code ${code} for ${equipment}. 
+          Provide a detailed explanation of what the issue is and step-by-step instructions on how to fix it. 
+          Include safety precautions if necessary. Format the response in clear paragraphs.`;
+
+          const completion = await openai.chat.completions.create({
+            messages: [{ role: "user", content: prompt }],
+            model: "gpt-3.5-turbo",
+          });
+
+          res.json({ analysis: completion.choices[0].message.content });
+        } catch (error) {
+          console.error('Error calling OpenAI API:', error);
+          // Fall back to generic response if OpenAI fails
+          const analysis = `
 Fault Code Analysis for ${equipment} - Code: ${code}
 
 We don't have specific information about this fault code in our database. Here are some general troubleshooting steps:
@@ -202,9 +233,34 @@ Safety Precautions:
 - Follow manufacturer-specific safety guidelines
 
 Note: For accurate diagnosis and repair, please consult your equipment's service manual or a qualified technician.
-      `;
-      
-      res.json({ analysis });
+          `;
+          
+          res.json({ analysis });
+        }
+      } else {
+        // If OpenAI is not available, provide a generic response
+        const analysis = `
+Fault Code Analysis for ${equipment} - Code: ${code}
+
+We don't have specific information about this fault code in our database. Here are some general troubleshooting steps:
+
+1. Consult your equipment's service manual for specific information about this fault code
+2. Check for obvious issues like loose connections, damaged wires, or fluid leaks
+3. Verify that all sensors related to this system are functioning properly
+4. Check if there are any recent maintenance issues that might be related
+5. Consider consulting a qualified technician for this specific fault code
+
+Safety Precautions:
+- Always follow proper safety procedures when working on equipment
+- Ensure power is disconnected before working on electrical components
+- Use appropriate personal protective equipment
+- Follow manufacturer-specific safety guidelines
+
+Note: For accurate diagnosis and repair, please consult your equipment's service manual or a qualified technician.
+        `;
+        
+        res.json({ analysis });
+      }
     }
   } catch (error) {
     console.error('Error:', error);
@@ -229,5 +285,9 @@ app.use((err, req, res, next) => {
 // Start the server
 app.listen(port, '0.0.0.0', () => {
   console.log(`Server running on port ${port}`);
-  console.log('Using local fault code database - no API key required');
+  if (openai) {
+    console.log('OpenAI integration is active - will use ChatGPT for unknown fault codes');
+  } else {
+    console.log('Using local fault code database only - no API key configured');
+  }
 }); 
