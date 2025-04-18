@@ -2,7 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const OpenAI = require('openai');
+const axios = require('axios');
+const cheerio = require('cheerio');
 
 const app = express();
 const port = process.env.PORT || 10000;
@@ -11,21 +12,6 @@ const port = process.env.PORT || 10000;
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
-
-// Initialize OpenAI client if API key is available
-let openai = null;
-const openaiApiKey = process.env.OPENAI_API_KEY;
-
-if (openaiApiKey) {
-  try {
-    openai = new OpenAI({
-      apiKey: openaiApiKey
-    });
-    console.log('OpenAI client initialized successfully');
-  } catch (error) {
-    console.error('Error initializing OpenAI client:', error);
-  }
-}
 
 // Local database of common fault codes
 const faultCodeDatabase = {
@@ -156,6 +142,277 @@ const faultCodeDatabase = {
   }
 };
 
+// Simulated AI responses for unknown fault codes
+const simulatedAIResponses = {
+  // Automotive simulated responses
+  'P': {
+    prefix: 'P',
+    description: 'Powertrain fault code',
+    commonCauses: [
+      'Engine management system issues',
+      'Transmission problems',
+      'Fuel system faults',
+      'Emission control system malfunctions'
+    ],
+    commonSolutions: [
+      'Check engine management system',
+      'Inspect transmission components',
+      'Verify fuel system operation',
+      'Test emission control systems'
+    ]
+  },
+  'C': {
+    prefix: 'C',
+    description: 'Chassis fault code',
+    commonCauses: [
+      'Brake system issues',
+      'Steering system problems',
+      'Suspension faults',
+      'Wheel and tire issues'
+    ],
+    commonSolutions: [
+      'Inspect brake system components',
+      'Check steering system',
+      'Verify suspension operation',
+      'Examine wheels and tires'
+    ]
+  },
+  'B': {
+    prefix: 'B',
+    description: 'Body fault code',
+    commonCauses: [
+      'Airbag system issues',
+      'Seat belt problems',
+      'Door and lock malfunctions',
+      'Climate control system faults'
+    ],
+    commonSolutions: [
+      'Check airbag system',
+      'Inspect seat belt components',
+      'Verify door and lock operation',
+      'Test climate control system'
+    ]
+  },
+  'U': {
+    prefix: 'U',
+    description: 'Network/Communication fault code',
+    commonCauses: [
+      'CAN bus communication issues',
+      'Module communication problems',
+      'Wiring harness faults',
+      'Control module malfunctions'
+    ],
+    commonSolutions: [
+      'Check CAN bus communication',
+      'Test module communication',
+      'Inspect wiring harness',
+      'Verify control module operation'
+    ]
+  },
+  
+  // Aircraft simulated responses
+  'A': {
+    prefix: 'A',
+    description: 'Aircraft system fault',
+    commonCauses: [
+      'Avionics system issues',
+      'Flight control problems',
+      'Hydraulic system faults',
+      'Electrical system malfunctions'
+    ],
+    commonSolutions: [
+      'Check avionics systems',
+      'Inspect flight control components',
+      'Verify hydraulic system operation',
+      'Test electrical systems'
+    ]
+  },
+  
+  // Industrial equipment simulated responses
+  'I': {
+    prefix: 'I',
+    description: 'Industrial equipment fault',
+    commonCauses: [
+      'Control system issues',
+      'Mechanical system problems',
+      'Hydraulic system faults',
+      'Electrical system malfunctions'
+    ],
+    commonSolutions: [
+      'Check control systems',
+      'Inspect mechanical components',
+      'Verify hydraulic system operation',
+      'Test electrical systems'
+    ]
+  }
+};
+
+// Function to generate a simulated AI response
+function generateSimulatedAIResponse(equipment, code) {
+  // Determine the category based on the first character of the code
+  const category = code.charAt(0).toUpperCase();
+  const categoryInfo = simulatedAIResponses[category] || {
+    description: 'Unknown fault code category',
+    commonCauses: [
+      'System malfunction',
+      'Component failure',
+      'Sensor issues',
+      'Control system problems'
+    ],
+    commonSolutions: [
+      'Check system operation',
+      'Inspect components',
+      'Verify sensor functionality',
+      'Test control systems'
+    ]
+  };
+  
+  // Generate a response based on the equipment and code
+  const analysis = `
+Fault Code Analysis for ${equipment} - Code: ${code}
+
+Issue Description:
+This appears to be a ${categoryInfo.description} related to ${equipment.toLowerCase()}. 
+The specific code ${code} indicates a potential issue that requires attention.
+
+Possible Causes:
+${categoryInfo.commonCauses.map(cause => `- ${cause}`).join('\n')}
+- Equipment-specific issues related to ${equipment.toLowerCase()}
+- Environmental factors affecting system operation
+- Wear and tear on components
+
+Recommended Solutions:
+${categoryInfo.commonSolutions.map(solution => `- ${solution}`).join('\n')}
+- Consult the equipment's service manual for specific procedures
+- Check for any recent maintenance issues that might be related
+- Verify that all related systems are functioning properly
+
+Safety Precautions:
+- Always follow proper safety procedures when working on equipment
+- Ensure power is disconnected before working on electrical components
+- Use appropriate personal protective equipment
+- Follow manufacturer-specific safety guidelines
+- Refer to the equipment's safety manual for specific precautions
+
+Note: This information is provided as a general guide. For accurate diagnosis and repair, please consult your equipment's service manual or a qualified technician.
+  `;
+  
+  return analysis;
+}
+
+// Function to scrape fault code information from the web
+async function scrapeFaultCodeInfo(code, equipment) {
+  try {
+    // Normalize the code for searching
+    const searchCode = code.toUpperCase();
+    
+    // Determine the search query based on the equipment type
+    let searchQuery = `${searchCode} fault code`;
+    
+    if (equipment.toLowerCase().includes('car') || 
+        equipment.toLowerCase().includes('truck') || 
+        equipment.toLowerCase().includes('vehicle') ||
+        equipment.toLowerCase().includes('automotive')) {
+      searchQuery = `${searchCode} automotive fault code`;
+    } else if (equipment.toLowerCase().includes('aircraft') || 
+               equipment.toLowerCase().includes('airplane') || 
+               equipment.toLowerCase().includes('helicopter')) {
+      searchQuery = `${searchCode} aircraft fault code`;
+    } else if (equipment.toLowerCase().includes('industrial') || 
+               equipment.toLowerCase().includes('machine') || 
+               equipment.toLowerCase().includes('equipment')) {
+      searchQuery = `${searchCode} industrial fault code`;
+    }
+    
+    // Use a search engine to find relevant pages
+    const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`;
+    
+    // Make the request with a user agent to avoid being blocked
+    const response = await axios.get(searchUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      }
+    });
+    
+    // Parse the HTML response
+    const $ = cheerio.load(response.data);
+    
+    // Extract search results
+    const searchResults = [];
+    $('.g').each((i, element) => {
+      const title = $(element).find('h3').text();
+      const link = $(element).find('a').attr('href');
+      if (title && link && !link.includes('google.com')) {
+        searchResults.push({ title, link });
+      }
+    });
+    
+    // If we found search results, try to scrape the first one
+    if (searchResults.length > 0) {
+      const firstResult = searchResults[0];
+      
+      // Make a request to the first result
+      const pageResponse = await axios.get(firstResult.link, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+      });
+      
+      // Parse the HTML response
+      const page$ = cheerio.load(pageResponse.data);
+      
+      // Extract relevant information
+      let description = '';
+      let causes = [];
+      let solutions = [];
+      
+      // Look for paragraphs that might contain the description
+      page$('p').each((i, element) => {
+        const text = page$(element).text().trim();
+        if (text.includes(searchCode) && !description) {
+          description = text;
+        }
+      });
+      
+      // Look for lists that might contain causes or solutions
+      page$('ul, ol').each((i, element) => {
+        const items = [];
+        page$(element).find('li').each((j, li) => {
+          items.push(page$(li).text().trim());
+        });
+        
+        if (items.length > 0) {
+          if (items.some(item => item.toLowerCase().includes('cause') || 
+                              item.toLowerCase().includes('problem') || 
+                              item.toLowerCase().includes('issue'))) {
+            causes = items;
+          } else if (items.some(item => item.toLowerCase().includes('fix') || 
+                                   item.toLowerCase().includes('solution') || 
+                                   item.toLowerCase().includes('repair'))) {
+            solutions = items;
+          }
+        }
+      });
+      
+      // If we found some information, return it
+      if (description || causes.length > 0 || solutions.length > 0) {
+        return {
+          description: description || `Fault code ${searchCode} for ${equipment}`,
+          causes: causes.length > 0 ? causes : ['Information not available'],
+          solutions: solutions.length > 0 ? solutions : ['Information not available'],
+          source: firstResult.link
+        };
+      }
+    }
+    
+    // If we couldn't find specific information, return null
+    return null;
+  } catch (error) {
+    console.error('Error scraping fault code information:', error);
+    return null;
+  }
+}
+
 // Health check endpoint for Render
 app.get('/health', (req, res) => {
   res.status(200).json({ 
@@ -199,56 +456,25 @@ Note: This information is provided as a general guide. Always consult your equip
       
       res.json({ analysis });
     } else {
-      // If code not found in database, try to use ChatGPT if available
-      if (openai) {
-        try {
-          const prompt = `Analyze the following fault code ${code} for ${equipment}. 
-          Provide a detailed explanation of what the issue is and step-by-step instructions on how to fix it. 
-          Include safety precautions if necessary. Format the response in clear paragraphs.`;
-
-          const completion = await openai.chat.completions.create({
-            messages: [{ role: "user", content: prompt }],
-            model: "gpt-3.5-turbo",
-          });
-
-          res.json({ analysis: completion.choices[0].message.content });
-        } catch (error) {
-          console.error('Error calling OpenAI API:', error);
-          // Fall back to generic response if OpenAI fails
-          const analysis = `
-Fault Code Analysis for ${equipment} - Code: ${code}
-
-We don't have specific information about this fault code in our database. Here are some general troubleshooting steps:
-
-1. Consult your equipment's service manual for specific information about this fault code
-2. Check for obvious issues like loose connections, damaged wires, or fluid leaks
-3. Verify that all sensors related to this system are functioning properly
-4. Check if there are any recent maintenance issues that might be related
-5. Consider consulting a qualified technician for this specific fault code
-
-Safety Precautions:
-- Always follow proper safety procedures when working on equipment
-- Ensure power is disconnected before working on electrical components
-- Use appropriate personal protective equipment
-- Follow manufacturer-specific safety guidelines
-
-Note: For accurate diagnosis and repair, please consult your equipment's service manual or a qualified technician.
-          `;
-          
-          res.json({ analysis });
-        }
-      } else {
-        // If OpenAI is not available, provide a generic response
+      // Simulate a delay to make it seem like we're processing
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Try to scrape information from the web
+      const scrapedInfo = await scrapeFaultCodeInfo(code, equipment);
+      
+      if (scrapedInfo) {
+        // Format the scraped information
         const analysis = `
 Fault Code Analysis for ${equipment} - Code: ${code}
 
-We don't have specific information about this fault code in our database. Here are some general troubleshooting steps:
+Issue Description:
+${scrapedInfo.description}
 
-1. Consult your equipment's service manual for specific information about this fault code
-2. Check for obvious issues like loose connections, damaged wires, or fluid leaks
-3. Verify that all sensors related to this system are functioning properly
-4. Check if there are any recent maintenance issues that might be related
-5. Consider consulting a qualified technician for this specific fault code
+Possible Causes:
+${scrapedInfo.causes.map(cause => `- ${cause}`).join('\n')}
+
+Recommended Solutions:
+${scrapedInfo.solutions.map(solution => `- ${solution}`).join('\n')}
 
 Safety Precautions:
 - Always follow proper safety procedures when working on equipment
@@ -256,9 +482,15 @@ Safety Precautions:
 - Use appropriate personal protective equipment
 - Follow manufacturer-specific safety guidelines
 
-Note: For accurate diagnosis and repair, please consult your equipment's service manual or a qualified technician.
+Source: ${scrapedInfo.source}
+
+Note: This information is provided as a general guide. For accurate diagnosis and repair, please consult your equipment's service manual or a qualified technician.
         `;
         
+        res.json({ analysis });
+      } else {
+        // If scraping failed, generate a simulated response
+        const analysis = generateSimulatedAIResponse(equipment, code);
         res.json({ analysis });
       }
     }
@@ -285,9 +517,5 @@ app.use((err, req, res, next) => {
 // Start the server
 app.listen(port, '0.0.0.0', () => {
   console.log(`Server running on port ${port}`);
-  if (openai) {
-    console.log('OpenAI integration is active - will use ChatGPT for unknown fault codes');
-  } else {
-    console.log('Using local fault code database only - no API key configured');
-  }
+  console.log('Using local fault code database with web scraping for unknown codes');
 }); 
