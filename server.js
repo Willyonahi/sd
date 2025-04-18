@@ -413,25 +413,44 @@ async function scrapeFaultCodeInfo(code, equipment) {
     // Determine the search query based on the equipment type
     let searchQuery = `${searchCode} fault code`;
     
-    if (equipment.toLowerCase().includes('car') || 
-        equipment.toLowerCase().includes('truck') || 
-        equipment.toLowerCase().includes('vehicle') ||
-        equipment.toLowerCase().includes('automotive')) {
+    // Convert equipment to lowercase for easier matching
+    const equipmentLower = equipment.toLowerCase();
+    
+    // Check for common equipment categories in the input
+    if (equipmentLower.includes('car') || 
+        equipmentLower.includes('truck') || 
+        equipmentLower.includes('vehicle') ||
+        equipmentLower.includes('automotive') ||
+        equipmentLower.includes('engine') ||
+        equipmentLower.includes('motor')) {
       searchQuery = `${searchCode} automotive fault code`;
-    } else if (equipment.toLowerCase().includes('aircraft') || 
-               equipment.toLowerCase().includes('airplane') || 
-               equipment.toLowerCase().includes('helicopter')) {
+    } else if (equipmentLower.includes('aircraft') || 
+               equipmentLower.includes('airplane') || 
+               equipmentLower.includes('helicopter') ||
+               equipmentLower.includes('jet') ||
+               equipmentLower.includes('plane')) {
       searchQuery = `${searchCode} aircraft fault code`;
-    } else if (equipment.toLowerCase().includes('industrial') || 
-               equipment.toLowerCase().includes('machine') || 
-               equipment.toLowerCase().includes('equipment')) {
+    } else if (equipmentLower.includes('industrial') || 
+               equipmentLower.includes('machine') || 
+               equipmentLower.includes('equipment') ||
+               equipmentLower.includes('factory') ||
+               equipmentLower.includes('manufacturing')) {
       searchQuery = `${searchCode} industrial fault code`;
-    } else if (equipment.toLowerCase().includes('printer') || 
-               equipment.toLowerCase().includes('fax') || 
-               equipment.toLowerCase().includes('copier') || 
-               equipment.toLowerCase().includes('scanner') || 
-               equipment.toLowerCase().includes('network') || 
-               equipment.toLowerCase().includes('computer')) {
+    } else if (equipmentLower.includes('printer') || 
+               equipmentLower.includes('fax') || 
+               equipmentLower.includes('copier') || 
+               equipmentLower.includes('scanner') || 
+               equipmentLower.includes('network') || 
+               equipmentLower.includes('computer') ||
+               equipmentLower.includes('laptop') ||
+               equipmentLower.includes('desktop') ||
+               equipmentLower.includes('monitor') ||
+               equipmentLower.includes('device') ||
+               equipmentLower.includes('tech') ||
+               equipmentLower.includes('electronic')) {
+      searchQuery = `${searchCode} ${equipment} fault code`;
+    } else {
+      // For any other equipment type, just use the exact input
       searchQuery = `${searchCode} ${equipment} fault code`;
     }
     
