@@ -139,6 +139,90 @@ const faultCodeDatabase = {
       'Recalibrate sensor if possible'
     ],
     safety: 'Follow equipment-specific safety procedures. Some sensors may be in hazardous locations.'
+  },
+  
+  // Technology equipment fault codes
+  'E04': {
+    description: 'Paper Jam',
+    causes: [
+      'Paper stuck in feed rollers',
+      'Worn or dirty rollers',
+      'Incorrect paper size or type',
+      'Obstruction in paper path',
+      'Misaligned paper guides'
+    ],
+    solutions: [
+      'Clear paper from feed rollers and paper path',
+      'Clean or replace worn rollers',
+      'Use correct paper size and type',
+      'Remove any obstructions',
+      'Adjust paper guides to correct position'
+    ],
+    safety: 'Turn off device before clearing jams. Be careful with moving parts. Avoid using sharp objects to clear jams.'
+  },
+  'E05': {
+    description: 'Toner/Ink Low',
+    causes: [
+      'Toner/ink cartridge nearly empty',
+      'Faulty toner/ink level sensor',
+      'Toner/ink cartridge not properly installed'
+    ],
+    solutions: [
+      'Replace toner/ink cartridge',
+      'Check and replace faulty sensor',
+      'Remove and reinstall cartridge properly'
+    ],
+    safety: 'Handle toner/ink cartridges carefully. Avoid shaking or dropping. Dispose of used cartridges according to local regulations.'
+  },
+  'E06': {
+    description: 'Scanner Error',
+    causes: [
+      'Scanner mechanism obstruction',
+      'Faulty scanner motor',
+      'Dirty scanner glass',
+      'Scanner calibration issue'
+    ],
+    solutions: [
+      'Clear any obstructions from scanner path',
+      'Check and replace scanner motor if faulty',
+      'Clean scanner glass with appropriate cleaner',
+      'Run scanner calibration procedure'
+    ],
+    safety: 'Unplug device before cleaning. Use only manufacturer-recommended cleaning solutions.'
+  },
+  'E07': {
+    description: 'Network Connection Error',
+    causes: [
+      'Network cable disconnected',
+      'Incorrect network settings',
+      'Firewall blocking connection',
+      'IP address conflict',
+      'Network driver issues'
+    ],
+    solutions: [
+      'Check and reconnect network cable',
+      'Verify network settings',
+      'Configure firewall to allow device',
+      'Resolve IP address conflict',
+      'Update or reinstall network drivers'
+    ],
+    safety: 'No specific safety concerns for network troubleshooting.'
+  },
+  'E08': {
+    description: 'Hardware Failure',
+    causes: [
+      'Failed component',
+      'Overheating',
+      'Power supply issues',
+      'Firmware corruption'
+    ],
+    solutions: [
+      'Identify and replace failed component',
+      'Clean vents and ensure proper ventilation',
+      'Check power supply and connections',
+      'Update or reinstall firmware'
+    ],
+    safety: 'Disconnect power before opening device. Be aware of capacitors that may retain charge.'
   }
 };
 
@@ -244,6 +328,26 @@ const simulatedAIResponses = {
       'Verify hydraulic system operation',
       'Test electrical systems'
     ]
+  },
+  
+  // Technology equipment simulated responses
+  'T': {
+    prefix: 'T',
+    description: 'Technology equipment fault code',
+    commonCauses: [
+      'Hardware malfunction',
+      'Software/firmware issues',
+      'Connectivity problems',
+      'User interface errors',
+      'Resource limitations'
+    ],
+    commonSolutions: [
+      'Check hardware components',
+      'Update software/firmware',
+      'Verify network connections',
+      'Reset device to factory settings',
+      'Clear device memory/cache'
+    ]
   }
 };
 
@@ -322,6 +426,13 @@ async function scrapeFaultCodeInfo(code, equipment) {
                equipment.toLowerCase().includes('machine') || 
                equipment.toLowerCase().includes('equipment')) {
       searchQuery = `${searchCode} industrial fault code`;
+    } else if (equipment.toLowerCase().includes('printer') || 
+               equipment.toLowerCase().includes('fax') || 
+               equipment.toLowerCase().includes('copier') || 
+               equipment.toLowerCase().includes('scanner') || 
+               equipment.toLowerCase().includes('network') || 
+               equipment.toLowerCase().includes('computer')) {
+      searchQuery = `${searchCode} ${equipment} fault code`;
     }
     
     // Use a search engine to find relevant pages
