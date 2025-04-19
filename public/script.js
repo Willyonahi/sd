@@ -4,6 +4,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadingDiv = document.getElementById('loading');
     const errorDiv = document.getElementById('error');
     const healthStatus = document.getElementById('health-status');
+    const customLoadingOverlay = document.getElementById('custom-loading-overlay');
+    const loadingAudio = document.getElementById('loading-audio');
 
     // Check server health on page load
     checkServerHealth();
@@ -30,6 +32,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Function to show custom loading overlay
+    function showCustomLoading() {
+        customLoadingOverlay.style.display = 'flex';
+        loadingAudio.play().catch(error => {
+            console.log('Audio playback failed:', error);
+        });
+    }
+
+    // Function to hide custom loading overlay
+    function hideCustomLoading() {
+        customLoadingOverlay.style.display = 'none';
+        loadingAudio.pause();
+        loadingAudio.currentTime = 0;
+    }
+
     // Handle form submission
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -44,7 +61,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        // Show loading screen
+        // Show loading screens
+        showCustomLoading();
         loadingDiv.style.display = 'flex';
         resultDiv.style.display = 'none';
         errorDiv.style.display = 'none';
@@ -59,7 +77,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ equipment, code })
             });
             
-            // Hide loading screen
+            // Hide loading screens
+            hideCustomLoading();
             loadingDiv.style.display = 'none';
             
             if (!response.ok) {
@@ -73,6 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
             resultDiv.innerHTML = `<pre>${data.analysis}</pre>`;
             resultDiv.style.display = 'block';
         } catch (error) {
+            hideCustomLoading();
             showError(error.message);
         }
     });
