@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - IP Tracker</title>
+    <title>Admin Access</title>
     <link rel="stylesheet" href="styles.css">
     <style>
         .admin-container {
@@ -26,7 +26,7 @@
         #ip-logs {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 2rem;
+            margin-top: 1rem;
         }
         
         #ip-logs th, #ip-logs td {
@@ -73,19 +73,115 @@
         .hidden {
             display: none;
         }
+        
+        /* Tab navigation styles */
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #dee2e6;
+            margin-bottom: 20px;
+        }
+        
+        .tab-btn {
+            padding: 10px 15px;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-weight: 500;
+            color: #6c757d;
+        }
+        
+        .tab-btn.active {
+            color: #4a90e2;
+            border-bottom: 3px solid #4a90e2;
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 15px 0;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* Stat cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        .stat-card h3 {
+            font-size: 14px;
+            color: #6c757d;
+            margin-bottom: 10px;
+        }
+        
+        .stat-card .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4a90e2;
+        }
+        
+        /* Canvas preview */
+        .canvas-preview {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            max-width: 500px;
+        }
+        
+        /* Settings form */
+        .settings-form {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .settings-group {
+            margin-bottom: 15px;
+        }
+        
+        .settings-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .settings-form button {
+            margin-top: 10px;
+            background-color: #4a90e2;
+        }
+        
+        /* Chart container */
+        .chart-container {
+            height: 300px;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
     <div class="admin-container">
         <div class="admin-header">
-            <h1>Admin Dashboard - IP Tracker</h1>
+            <h1>Admin Access</h1>
             <a href="/" class="btn">Back to Main Site</a>
         </div>
         
         <div class="admin-notice">
-            <strong>Notice:</strong> This IP tracking functionality is for security and administrative purposes only. 
-            All data collection complies with relevant privacy laws. IP data is stored temporarily and used only 
-            for preventing abuse of the service.
+            <strong>Notice:</strong> This administrative area is for authorized personnel only. 
+            User information is collected in compliance with relevant privacy laws and used only 
+            for maintaining site security and preventing abuse of the service.
         </div>
         
         <div id="login-section">
@@ -107,25 +203,235 @@
         </div>
         
         <div id="dashboard-section" class="hidden">
-            <div class="admin-header">
-                <h2>IP Logs</h2>
-                <button id="refresh-logs">Refresh Logs</button>
+            <!-- Tab Navigation -->
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+                <button class="tab-btn" data-tab="visitors">Visitor Logs</button>
+                <button class="tab-btn" data-tab="canvas">Canvas Management</button>
+                <button class="tab-btn" data-tab="settings">Settings</button>
+                <button class="tab-btn" data-tab="system">System</button>
             </div>
             
-            <table id="ip-logs">
-                <thead>
-                    <tr>
-                        <th>IP Address</th>
-                        <th>Timestamp (Local Time)</th>
-                        <th>Path</th>
-                        <th>User Agent</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="ip-logs-body">
-                    <!-- IP logs will be inserted here -->
-                </tbody>
-            </table>
+            <!-- Dashboard Tab -->
+            <div id="dashboard-tab" class="tab-content active">
+                <h2>Dashboard</h2>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>Total Visitors</h3>
+                        <div class="value" id="total-visitors">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Unique IPs</h3>
+                        <div class="value" id="unique-ips">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Pixels Placed</h3>
+                        <div class="value" id="pixels-placed">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Active Now</h3>
+                        <div class="value" id="active-now">--</div>
+                    </div>
+                </div>
+                
+                <h3>Visitor Activity (Last 24 Hours)</h3>
+                <div class="chart-container" id="visitor-chart">
+                    <p>Chart loading...</p>
+                </div>
+                
+                <h3>Recent Activity</h3>
+                <table id="recent-activity" class="ip-logs">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Time</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td colspan="3">Loading activity...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Visitor Logs Tab -->
+            <div id="visitors-tab" class="tab-content">
+                <div class="admin-header">
+                    <h2>Visitor Logs</h2>
+                    <button id="refresh-logs">Refresh Logs</button>
+                </div>
+                
+                <div class="filters" style="margin-bottom: 15px;">
+                    <label for="ip-filter">Filter by IP:</label>
+                    <input type="text" id="ip-filter" placeholder="Enter IP address">
+                    <button id="apply-filter" style="width: auto; padding: 5px 10px; margin-left: 10px;">Apply</button>
+                    <button id="clear-filter" style="width: auto; padding: 5px 10px; margin-left: 5px;">Clear</button>
+                </div>
+                
+                <table id="ip-logs">
+                    <thead>
+                        <tr>
+                            <th>IP Address</th>
+                            <th>Timestamp (Local Time)</th>
+                            <th>Path</th>
+                            <th>User Agent</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ip-logs-body">
+                        <!-- IP logs will be inserted here -->
+                    </tbody>
+                </table>
+                
+                <div class="pagination" style="margin-top: 15px; text-align: center;">
+                    <button id="prev-page" disabled>Previous</button>
+                    <span id="page-info">Page 1</span>
+                    <button id="next-page">Next</button>
+                </div>
+            </div>
+            
+            <!-- Canvas Management Tab -->
+            <div id="canvas-tab" class="tab-content">
+                <h2>Canvas Management</h2>
+                
+                <div style="display: flex; margin-bottom: 20px;">
+                    <div style="flex: 1;">
+                        <h3>Canvas Preview</h3>
+                        <div class="canvas-preview">
+                            <canvas id="admin-canvas-preview" width="500" height="500"></canvas>
+                        </div>
+                        <div style="margin-top: 10px;">
+                            <button id="refresh-canvas">Refresh Preview</button>
+                            <button id="reset-canvas" style="background-color: #dc3545; margin-left: 10px;">Reset Canvas</button>
+                        </div>
+                    </div>
+                    
+                    <div style="flex: 1; margin-left: 20px;">
+                        <h3>Canvas Statistics</h3>
+                        <div class="stats-grid" style="grid-template-columns: 1fr 1fr;">
+                            <div class="stat-card">
+                                <h3>Total Pixels</h3>
+                                <div class="value" id="canvas-total-pixels">--</div>
+                            </div>
+                            <div class="stat-card">
+                                <h3>Unique Contributors</h3>
+                                <div class="value" id="canvas-contributors">--</div>
+                            </div>
+                            <div class="stat-card">
+                                <h3>Most Used Color</h3>
+                                <div class="value" id="canvas-popular-color">--</div>
+                            </div>
+                            <div class="stat-card">
+                                <h3>Last Updated</h3>
+                                <div class="value" id="canvas-last-update">--</div>
+                            </div>
+                        </div>
+                        
+                        <h3>Recent Pixel Placements</h3>
+                        <table id="recent-pixels" class="ip-logs">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Position</th>
+                                    <th>Color</th>
+                                    <th>IP</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td colspan="4">Loading pixel data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <h3>Moderation Tools</h3>
+                <div class="settings-form">
+                    <div class="settings-group">
+                        <label for="pixel-coord-x">Pixel Coordinates:</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="number" id="pixel-coord-x" placeholder="X" min="0" max="99" style="width: 80px;">
+                            <input type="number" id="pixel-coord-y" placeholder="Y" min="0" max="99" style="width: 80px;">
+                            <button id="get-pixel-info" style="width: auto;">Get Info</button>
+                        </div>
+                    </div>
+                    
+                    <div id="pixel-info" style="margin-top: 10px; padding: 10px; background-color: #e9ecef; border-radius: 4px; display: none;">
+                        <p><strong>Pixel Information:</strong> <span id="pixel-details"></span></p>
+                        <button id="reset-pixel" style="background-color: #dc3545;">Reset This Pixel</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Settings Tab -->
+            <div id="settings-tab" class="tab-content">
+                <h2>Application Settings</h2>
+                
+                <div class="settings-form">
+                    <h3>Canvas Configuration</h3>
+                    <div class="settings-group">
+                        <label for="cooldown-setting">Pixel Placement Cooldown (seconds):</label>
+                        <input type="number" id="cooldown-setting" min="1" value="3">
+                    </div>
+                    
+                    <div class="settings-group">
+                        <label for="canvas-size">Canvas Size (pixels):</label>
+                        <input type="number" id="canvas-size" min="50" max="200" value="100">
+                    </div>
+                    
+                    <div class="settings-group">
+                        <label for="pixel-size">Pixel Display Size:</label>
+                        <input type="number" id="pixel-size" min="2" max="10" value="5">
+                    </div>
+                    
+                    <h3>Security Settings</h3>
+                    <div class="settings-group">
+                        <label for="rate-limit">Rate Limit (requests per minute):</label>
+                        <input type="number" id="rate-limit" min="10" value="60">
+                    </div>
+                    
+                    <div class="settings-group">
+                        <label for="log-retention">Log Retention (days):</label>
+                        <input type="number" id="log-retention" min="1" max="30" value="7">
+                    </div>
+                    
+                    <button id="save-settings">Save Settings</button>
+                    <p id="settings-message" style="margin-top: 10px; display: none;"></p>
+                </div>
+            </div>
+            
+            <!-- System Tab -->
+            <div id="system-tab" class="tab-content">
+                <h2>System Information</h2>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>Server Uptime</h3>
+                        <div class="value" id="server-uptime">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Memory Usage</h3>
+                        <div class="value" id="memory-usage">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>CPU Load</h3>
+                        <div class="value" id="cpu-load">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>API Response Time</h3>
+                        <div class="value" id="api-response">--</div>
+                    </div>
+                </div>
+                
+                <h3>Error Log</h3>
+                <div style="background-color: #f8f9fa; border-radius: 4px; padding: 15px; max-height: 300px; overflow-y: auto; font-family: monospace; font-size: 12px;">
+                    <pre id="error-log">Loading error logs...</pre>
+                </div>
+                
+                <h3>Actions</h3>
+                <button id="clear-logs" style="background-color: #dc3545;">Clear Error Logs</button>
+                <button id="restart-server" style="background-color: #dc3545; margin-left: 10px;">Restart Server</button>
+            </div>
         </div>
     </div>
     
@@ -139,6 +445,36 @@
             const password = document.getElementById('password');
             const refreshLogsBtn = document.getElementById('refresh-logs');
             const ipLogsBody = document.getElementById('ip-logs-body');
+            
+            // Tab functionality
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    // Remove active class from all buttons and contents
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    tabContents.forEach(content => content.classList.remove('active'));
+                    
+                    // Add active class to clicked button
+                    button.classList.add('active');
+                    
+                    // Show corresponding content
+                    const tabId = button.getAttribute('data-tab');
+                    document.getElementById(`${tabId}-tab`).classList.add('active');
+                    
+                    // Load tab-specific data
+                    if (tabId === 'visitors') {
+                        loadIpLogs();
+                    } else if (tabId === 'canvas') {
+                        loadCanvasPreview();
+                    } else if (tabId === 'dashboard') {
+                        loadDashboardStats();
+                    } else if (tabId === 'system') {
+                        loadSystemInfo();
+                    }
+                });
+            });
             
             // Login functionality
             loginBtn.addEventListener('click', async () => {
@@ -165,7 +501,7 @@
                     if (data.success) {
                         loginSection.classList.add('hidden');
                         dashboardSection.classList.remove('hidden');
-                        loadIpLogs();
+                        loadDashboardStats(); // Load initial dashboard data
                     } else {
                         loginError.textContent = data.message || 'Login failed';
                         loginError.style.display = 'block';
@@ -176,6 +512,39 @@
                     console.error('Login error:', error);
                 }
             });
+            
+            // Load dashboard statistics
+            async function loadDashboardStats() {
+                // In a real implementation, this would fetch actual stats from the server
+                document.getElementById('total-visitors').textContent = Math.floor(Math.random() * 1000) + 500;
+                document.getElementById('unique-ips').textContent = Math.floor(Math.random() * 300) + 100;
+                document.getElementById('pixels-placed').textContent = Math.floor(Math.random() * 5000) + 1000;
+                document.getElementById('active-now').textContent = Math.floor(Math.random() * 10) + 1;
+                
+                // For a real implementation, use a charting library like Chart.js
+                document.getElementById('visitor-chart').innerHTML = '<p>Activity chart would appear here (requires Chart.js)</p>';
+                
+                // Simulated recent activity
+                const activities = [
+                    { type: 'Pixel Placed', time: '2 minutes ago', details: 'User placed pixel at (45, 67)' },
+                    { type: 'New Visitor', time: '15 minutes ago', details: 'First visit from IP 192.168.x.x' },
+                    { type: 'Page View', time: '30 minutes ago', details: 'User viewed main page' },
+                    { type: 'Canvas Reset', time: '2 hours ago', details: 'Admin reset the canvas' }
+                ];
+                
+                const activityTable = document.querySelector('#recent-activity tbody');
+                activityTable.innerHTML = '';
+                
+                activities.forEach(activity => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${activity.type}</td>
+                        <td>${activity.time}</td>
+                        <td>${activity.details}</td>
+                    `;
+                    activityTable.appendChild(row);
+                });
+            }
             
             // Refresh logs
             refreshLogsBtn.addEventListener('click', loadIpLogs);
@@ -198,6 +567,11 @@
                     
                     if (data.success) {
                         ipLogsBody.innerHTML = '';
+                        
+                        if (data.logs.length === 0) {
+                            ipLogsBody.innerHTML = '<tr><td colspan="5">No logs found</td></tr>';
+                            return;
+                        }
                         
                         data.logs.forEach(log => {
                             const row = document.createElement('tr');
@@ -257,6 +631,138 @@
                     }
                 }
             };
+            
+            // Canvas Preview functionality
+            function loadCanvasPreview() {
+                const canvas = document.getElementById('admin-canvas-preview');
+                const ctx = canvas.getContext('2d');
+                
+                // In a real implementation, fetch actual canvas data
+                // For now, draw a sample pattern
+                const CANVAS_SIZE = 100;
+                const PIXEL_SIZE = canvas.width / CANVAS_SIZE;
+                
+                // Clear canvas
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Draw some sample pixels
+                const colors = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF'];
+                
+                for (let i = 0; i < 500; i++) {
+                    const x = Math.floor(Math.random() * CANVAS_SIZE);
+                    const y = Math.floor(Math.random() * CANVAS_SIZE);
+                    const color = colors[Math.floor(Math.random() * colors.length)];
+                    
+                    ctx.fillStyle = color;
+                    ctx.fillRect(x * PIXEL_SIZE, y * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
+                }
+                
+                // Update canvas stats
+                document.getElementById('canvas-total-pixels').textContent = '487';
+                document.getElementById('canvas-contributors').textContent = '32';
+                document.getElementById('canvas-popular-color').textContent = '#FF0000';
+                document.getElementById('canvas-last-update').textContent = '2 min ago';
+                
+                // Sample recent pixels
+                const pixelsTable = document.querySelector('#recent-pixels tbody');
+                pixelsTable.innerHTML = '';
+                
+                const samplePixels = [
+                    { time: '2 min ago', position: '(45, 67)', color: '#FF0000', ip: '192.168.x.x' },
+                    { time: '5 min ago', position: '(23, 89)', color: '#00FF00', ip: '192.168.x.x' },
+                    { time: '8 min ago', position: '(78, 12)', color: '#0000FF', ip: '172.16.x.x' },
+                    { time: '15 min ago', position: '(34, 56)', color: '#FFFF00', ip: '10.0.x.x' }
+                ];
+                
+                samplePixels.forEach(pixel => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${pixel.time}</td>
+                        <td>${pixel.position}</td>
+                        <td><span style="display:inline-block; width:15px; height:15px; background-color:${pixel.color}; margin-right:5px;"></span>${pixel.color}</td>
+                        <td>${pixel.ip}</td>
+                    `;
+                    pixelsTable.appendChild(row);
+                });
+            }
+            
+            // System info functionality
+            function loadSystemInfo() {
+                document.getElementById('server-uptime').textContent = '3d 7h 22m';
+                document.getElementById('memory-usage').textContent = '128MB';
+                document.getElementById('cpu-load').textContent = '12%';
+                document.getElementById('api-response').textContent = '45ms';
+                
+                // Sample error log
+                document.getElementById('error-log').textContent = `
+[2023-08-12 14:35:22] INFO: Server started on port 10000
+[2023-08-12 15:22:40] WARNING: High API request rate detected
+[2023-08-12 16:45:13] ERROR: Failed to connect to database - retrying
+[2023-08-12 16:45:18] INFO: Database connection re-established
+[2023-08-12 18:20:56] INFO: Canvas reset by admin`;
+            }
+            
+            // Settings form
+            const saveSettingsBtn = document.getElementById('save-settings');
+            if (saveSettingsBtn) {
+                saveSettingsBtn.addEventListener('click', () => {
+                    const message = document.getElementById('settings-message');
+                    message.style.display = 'block';
+                    message.style.color = 'green';
+                    message.textContent = 'Settings saved successfully!';
+                    
+                    // In a real implementation, send settings to server
+                    setTimeout(() => {
+                        message.style.display = 'none';
+                    }, 3000);
+                });
+            }
+            
+            // Canvas moderation tools
+            const getPixelInfoBtn = document.getElementById('get-pixel-info');
+            if (getPixelInfoBtn) {
+                getPixelInfoBtn.addEventListener('click', () => {
+                    const x = document.getElementById('pixel-coord-x').value;
+                    const y = document.getElementById('pixel-coord-y').value;
+                    
+                    if (!x || !y) {
+                        alert('Please enter both X and Y coordinates');
+                        return;
+                    }
+                    
+                    const pixelInfo = document.getElementById('pixel-info');
+                    const pixelDetails = document.getElementById('pixel-details');
+                    
+                    pixelInfo.style.display = 'block';
+                    pixelDetails.textContent = `Position (${x}, ${y}), Color: #FF0000, Placed by: 192.168.x.x at ${new Date().toLocaleString()}`;
+                });
+            }
+            
+            // Initialize refresh buttons
+            const refreshCanvasBtn = document.getElementById('refresh-canvas');
+            if (refreshCanvasBtn) {
+                refreshCanvasBtn.addEventListener('click', loadCanvasPreview);
+            }
+            
+            // System action buttons
+            const clearLogsBtn = document.getElementById('clear-logs');
+            if (clearLogsBtn) {
+                clearLogsBtn.addEventListener('click', () => {
+                    if (confirm('Are you sure you want to clear error logs?')) {
+                        document.getElementById('error-log').textContent = '[' + new Date().toLocaleString() + '] INFO: Logs cleared by admin';
+                    }
+                });
+            }
+            
+            const restartServerBtn = document.getElementById('restart-server');
+            if (restartServerBtn) {
+                restartServerBtn.addEventListener('click', () => {
+                    if (confirm('Are you sure you want to restart the server? This will disconnect all users.')) {
+                        alert('Server restart functionality would be implemented here.');
+                    }
+                });
+            }
         });
     </script>
 </body>
