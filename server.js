@@ -410,11 +410,11 @@ async function scrapeFaultCodeInfo(code, equipment) {
     // Normalize the code for searching
     const searchCode = code.toUpperCase();
     
-    // Determine the search query based on the equipment type
-    let searchQuery = `${searchCode} fault code`;
-    
     // Convert equipment to lowercase for easier matching
     const equipmentLower = equipment.toLowerCase();
+    
+    // Create a more precise search query with quoted terms
+    let searchQuery = `"${equipment}" "${searchCode}" fault code`;
     
     // Check for common equipment categories in the input
     if (equipmentLower.includes('car') || 
@@ -423,19 +423,19 @@ async function scrapeFaultCodeInfo(code, equipment) {
         equipmentLower.includes('automotive') ||
         equipmentLower.includes('engine') ||
         equipmentLower.includes('motor')) {
-      searchQuery = `${searchCode} automotive fault code`;
+      searchQuery = `"automotive" "${searchCode}" fault code`;
     } else if (equipmentLower.includes('aircraft') || 
                equipmentLower.includes('airplane') || 
                equipmentLower.includes('helicopter') ||
                equipmentLower.includes('jet') ||
                equipmentLower.includes('plane')) {
-      searchQuery = `${searchCode} aircraft fault code`;
+      searchQuery = `"aircraft" "${searchCode}" fault code`;
     } else if (equipmentLower.includes('industrial') || 
                equipmentLower.includes('machine') || 
                equipmentLower.includes('equipment') ||
                equipmentLower.includes('factory') ||
                equipmentLower.includes('manufacturing')) {
-      searchQuery = `${searchCode} industrial fault code`;
+      searchQuery = `"industrial" "${searchCode}" fault code`;
     } else if (equipmentLower.includes('printer') || 
                equipmentLower.includes('fax') || 
                equipmentLower.includes('copier') || 
@@ -448,11 +448,10 @@ async function scrapeFaultCodeInfo(code, equipment) {
                equipmentLower.includes('device') ||
                equipmentLower.includes('tech') ||
                equipmentLower.includes('electronic')) {
-      searchQuery = `${searchCode} ${equipment} fault code`;
-    } else {
-      // For any other equipment type, just use the exact input
-      searchQuery = `${searchCode} ${equipment} fault code`;
+      searchQuery = `"${equipment}" "${searchCode}" fault code`;
     }
+    
+    console.log(`Searching for: ${searchQuery}`);
     
     // Use a search engine to find relevant pages
     const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`;
