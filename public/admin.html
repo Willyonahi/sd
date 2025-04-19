@@ -515,35 +515,106 @@
             
             // Load dashboard statistics
             async function loadDashboardStats() {
-                // In a real implementation, this would fetch actual stats from the server
-                document.getElementById('total-visitors').textContent = Math.floor(Math.random() * 1000) + 500;
-                document.getElementById('unique-ips').textContent = Math.floor(Math.random() * 300) + 100;
-                document.getElementById('pixels-placed').textContent = Math.floor(Math.random() * 5000) + 1000;
-                document.getElementById('active-now').textContent = Math.floor(Math.random() * 10) + 1;
+                try {
+                    // Fetch real statistics from the server
+                    const response = await fetch('/admin/stats', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            username: username.value,
+                            password: password.value
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        // Update statistics with real values
+                        document.getElementById('total-visitors').textContent = data.stats.totalVisits;
+                        document.getElementById('unique-ips').textContent = data.stats.uniqueIps;
+                        document.getElementById('pixels-placed').textContent = data.stats.pixelsCount;
+                        document.getElementById('active-now').textContent = data.stats.activeUsers;
+                        
+                        // Load recent activity
+                        loadRecentActivity();
+                    } else {
+                        console.error('Failed to load statistics');
+                    }
+                } catch (error) {
+                    console.error('Error loading statistics:', error);
+                }
                 
                 // For a real implementation, use a charting library like Chart.js
                 document.getElementById('visitor-chart').innerHTML = '<p>Activity chart would appear here (requires Chart.js)</p>';
+            }
+            
+            // Load recent activity
+            async function loadRecentActivity() {
+                try {
+                    const response = await fetch('/admin/recent-activity', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            username: username.value,
+                            password: password.value
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        const activityTable = document.querySelector('#recent-activity tbody');
+                        activityTable.innerHTML = '';
+                        
+                        if (data.activities.length === 0) {
+                            activityTable.innerHTML = '<tr><td colspan="3">No recent activity</td></tr>';
+                            return;
+                        }
+                        
+                        data.activities.forEach(activity => {
+                            const date = new Date(activity.timestamp);
+                            const timeAgo = getTimeAgo(date);
+                            
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${activity.type}</td>
+                                <td>${timeAgo}</td>
+                                <td>${activity.details}</td>
+                            `;
+                            activityTable.appendChild(row);
+                        });
+                    } else {
+                        console.error('Failed to load recent activity');
+                    }
+                } catch (error) {
+                    console.error('Error loading recent activity:', error);
+                }
+            }
+            
+            // Helper function to format time ago
+            function getTimeAgo(date) {
+                const seconds = Math.floor((new Date() - date) / 1000);
                 
-                // Simulated recent activity
-                const activities = [
-                    { type: 'Pixel Placed', time: '2 minutes ago', details: 'User placed pixel at (45, 67)' },
-                    { type: 'New Visitor', time: '15 minutes ago', details: 'First visit from IP 192.168.x.x' },
-                    { type: 'Page View', time: '30 minutes ago', details: 'User viewed main page' },
-                    { type: 'Canvas Reset', time: '2 hours ago', details: 'Admin reset the canvas' }
-                ];
+                let interval = Math.floor(seconds / 31536000);
+                if (interval > 1) return interval + ' years ago';
                 
-                const activityTable = document.querySelector('#recent-activity tbody');
-                activityTable.innerHTML = '';
+                interval = Math.floor(seconds / 2592000);
+                if (interval > 1) return interval + ' months ago';
                 
-                activities.forEach(activity => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${activity.type}</td>
-                        <td>${activity.time}</td>
-                        <td>${activity.details}</td>
-                    `;
-                    activityTable.appendChild(row);
-                });
+                interval = Math.floor(seconds / 86400);
+                if (interval > 1) return interval + ' days ago';
+                
+                interval = Math.floor(seconds / 3600);
+                if (interval > 1) return interval + ' hours ago';
+                
+                interval = Math.floor(seconds / 60);
+                if (interval > 1) return interval + ' minutes ago';
+                
+                return Math.floor(seconds) + ' seconds ago';
             }
             
             // Refresh logs
@@ -637,51 +708,89 @@
                 const canvas = document.getElementById('admin-canvas-preview');
                 const ctx = canvas.getContext('2d');
                 
-                // In a real implementation, fetch actual canvas data
-                // For now, draw a sample pattern
-                const CANVAS_SIZE = 100;
-                const PIXEL_SIZE = canvas.width / CANVAS_SIZE;
-                
-                // Clear canvas
+                // Clear canvas with white background
                 ctx.fillStyle = 'white';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
                 
-                // Draw some sample pixels
-                const colors = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF'];
-                
-                for (let i = 0; i < 500; i++) {
-                    const x = Math.floor(Math.random() * CANVAS_SIZE);
-                    const y = Math.floor(Math.random() * CANVAS_SIZE);
-                    const color = colors[Math.floor(Math.random() * colors.length)];
-                    
-                    ctx.fillStyle = color;
-                    ctx.fillRect(x * PIXEL_SIZE, y * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
-                }
-                
-                // Update canvas stats
-                document.getElementById('canvas-total-pixels').textContent = '487';
-                document.getElementById('canvas-contributors').textContent = '32';
-                document.getElementById('canvas-popular-color').textContent = '#FF0000';
-                document.getElementById('canvas-last-update').textContent = '2 min ago';
-                
-                // Sample recent pixels
+                // Fetch actual pixel data
+                fetch('/api/pixels')
+                    .then(response => response.json())
+                    .then(pixels => {
+                        // Calculate appropriate pixel size
+                        const CANVAS_SIZE = 100;
+                        const PIXEL_SIZE = canvas.width / CANVAS_SIZE;
+                        
+                        // Draw actual pixels from the server
+                        pixels.forEach(pixel => {
+                            ctx.fillStyle = pixel.color;
+                            ctx.fillRect(pixel.x * PIXEL_SIZE, pixel.y * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
+                        });
+                        
+                        // Update canvas stats
+                        fetch('/admin/stats', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                username: username.value,
+                                password: password.value
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                document.getElementById('canvas-total-pixels').textContent = data.stats.pixelsCount;
+                                document.getElementById('canvas-contributors').textContent = data.stats.uniqueContributors;
+                                document.getElementById('canvas-popular-color').textContent = data.stats.popularColor;
+                                
+                                // Format last update time
+                                if (data.stats.lastUpdate) {
+                                    const lastUpdateDate = new Date(data.stats.lastUpdate);
+                                    document.getElementById('canvas-last-update').textContent = getTimeAgo(lastUpdateDate);
+                                } else {
+                                    document.getElementById('canvas-last-update').textContent = 'Never';
+                                }
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error loading canvas stats:', error);
+                        });
+                        
+                        // Update recent pixel placements
+                        updateRecentPixelPlacements(pixels);
+                    })
+                    .catch(error => {
+                        console.error('Error loading canvas pixels:', error);
+                    });
+            }
+            
+            // Update recent pixel placements table
+            function updateRecentPixelPlacements(pixels) {
                 const pixelsTable = document.querySelector('#recent-pixels tbody');
                 pixelsTable.innerHTML = '';
                 
-                const samplePixels = [
-                    { time: '2 min ago', position: '(45, 67)', color: '#FF0000', ip: '192.168.x.x' },
-                    { time: '5 min ago', position: '(23, 89)', color: '#00FF00', ip: '192.168.x.x' },
-                    { time: '8 min ago', position: '(78, 12)', color: '#0000FF', ip: '172.16.x.x' },
-                    { time: '15 min ago', position: '(34, 56)', color: '#FFFF00', ip: '10.0.x.x' }
-                ];
+                if (!pixels || pixels.length === 0) {
+                    pixelsTable.innerHTML = '<tr><td colspan="4">No pixels placed yet</td></tr>';
+                    return;
+                }
                 
-                samplePixels.forEach(pixel => {
+                // Sort pixels by timestamp (most recent first)
+                const sortedPixels = [...pixels]
+                    .filter(p => p.timestamp) // Only include pixels with timestamp
+                    .sort((a, b) => b.timestamp - a.timestamp)
+                    .slice(0, 10); // Show only the 10 most recent
+                
+                sortedPixels.forEach(pixel => {
+                    const date = new Date(pixel.timestamp);
+                    const timeAgo = getTimeAgo(date);
+                    
                     const row = document.createElement('tr');
                     row.innerHTML = `
-                        <td>${pixel.time}</td>
-                        <td>${pixel.position}</td>
+                        <td>${timeAgo}</td>
+                        <td>(${pixel.x}, ${pixel.y})</td>
                         <td><span style="display:inline-block; width:15px; height:15px; background-color:${pixel.color}; margin-right:5px;"></span>${pixel.color}</td>
-                        <td>${pixel.ip}</td>
+                        <td>${pixel.ip || 'Unknown'}</td>
                     `;
                     pixelsTable.appendChild(row);
                 });

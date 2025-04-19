@@ -1097,6 +1097,9 @@ app.post('/api/pixels', (req, res) => {
     return res.status(400).json({ error: 'Invalid pixel data' });
   }
   
+  // Get IP address
+  const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+  
   // Check if pixel already exists
   const existingPixelIndex = pixels.findIndex(p => p.x === x && p.y === y);
   
@@ -1104,10 +1107,10 @@ app.post('/api/pixels', (req, res) => {
   
   if (existingPixelIndex !== -1) {
     // Update existing pixel
-    pixels[existingPixelIndex] = { x, y, color, timestamp };
+    pixels[existingPixelIndex] = { x, y, color, timestamp, ip };
   } else {
     // Add new pixel
-    pixels.push({ x, y, color, timestamp });
+    pixels.push({ x, y, color, timestamp, ip });
   }
   
   res.status(201).json({ success: true });
@@ -1180,6 +1183,115 @@ app.post('/admin/ip-logs', (req, res) => {
       logs: ipLogs.map(log => ({
         ...log,
         timestamp: log.timestamp.toISOString()
+      }))
+    });
+  } else {
+    res.status(401).json({ success: false, message: 'Unauthorized' });
+  }
+});
+
+// Admin endpoint to get visitor statistics (protected)
+app.post('/admin/stats', (req, res) => {
+  const { username, password } = req.body;
+  
+  // Verify admin credentials
+  if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+    // Calculate visitor statistics
+    const totalVisits = ipLogs.length;
+    const uniqueIps = [...new Set(ipLogs.map(log => log.ip))].length;
+    
+    // Calculate active users in last 5 minutes
+    const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
+    const activeUsers = [...new Set(ipLogs
+      .filter(log => new Date(log.timestamp) > fiveMinutesAgo)
+      .map(log => log.ip))].length;
+      
+    // Get total pixels count
+    const pixelsCount = pixels.length;
+    
+    // Get unique pixel contributors (based on unique IPs)
+    const uniqueContributors = [...new Set(pixels
+      .filter(pixel => pixel.ip) // Some pixels might not have IP (if added before IP tracking)
+      .map(pixel => pixel.ip))].length;
+    
+    // Find most popular color
+    const colorCounts = {};
+    pixels.forEach(pixel => {
+      if (pixel.color) {
+        colorCounts[pixel.color] = (colorCounts[pixel.color] || 0) + 1;
+      }
+    });
+    
+    let popularColor = null;
+    let maxCount = 0;
+    
+    Object.entries(colorCounts).forEach(([color, count]) => {
+      if (count > maxCount) {
+        maxCount = count;
+        popularColor = color;
+      }
+    });
+    
+    // Get last update time
+    const lastUpdate = pixels.length > 0 
+      ? Math.max(...pixels.map(p => p.timestamp || 0))
+      : null;
+    
+    res.json({
+      success: true,
+      stats: {
+        totalVisits,
+        uniqueIps,
+        activeUsers,
+        pixelsCount,
+        uniqueContributors,
+        popularColor: popularColor || 'None',
+        lastUpdate: lastUpdate ? new Date(lastUpdate).toISOString() : null
+      }
+    });
+  } else {
+    res.status(401).json({ success: false, message: 'Unauthorized' });
+  }
+});
+
+// Admin endpoint to get recent activity (protected)
+app.post('/admin/recent-activity', (req, res) => {
+  const { username, password } = req.body;
+  
+  // Verify admin credentials
+  if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+    // Combine recent IP logs and pixel placements
+    const activities = [];
+    
+    // Add recent pixel placements
+    pixels.slice(0, 20).forEach(pixel => {
+      activities.push({
+        type: 'Pixel Placed',
+        timestamp: pixel.timestamp || Date.now(),
+        details: `Pixel placed at (${pixel.x}, ${pixel.y}) with color ${pixel.color}`,
+        ip: pixel.ip || 'Unknown'
+      });
+    });
+    
+    // Add recent page visits
+    ipLogs.slice(0, 20).forEach(log => {
+      activities.push({
+        type: 'Page Visit',
+        timestamp: log.timestamp,
+        details: `Visited ${log.path || 'unknown page'}`,
+        ip: log.ip
+      });
+    });
+    
+    // Sort by timestamp, most recent first
+    activities.sort((a, b) => b.timestamp - a.timestamp);
+    
+    // Return top 20 activities
+    res.json({
+      success: true,
+      activities: activities.slice(0, 20).map(activity => ({
+        ...activity,
+        timestamp: new Date(activity.timestamp).toISOString()
       }))
     });
   } else {
