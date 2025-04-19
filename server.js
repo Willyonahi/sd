@@ -1081,6 +1081,36 @@ async function scrapeFaultCodeInfo(code, equipment) {
   }
 }
 
+// In-memory storage for pixels
+const pixels = [];
+
+// Pixel Canvas API
+app.get('/api/pixels', (req, res) => {
+  res.json(pixels);
+});
+
+app.post('/api/pixels', (req, res) => {
+  const { x, y, color } = req.body;
+  
+  // Validate input
+  if (x === undefined || y === undefined || !color) {
+    return res.status(400).json({ error: 'Invalid pixel data' });
+  }
+  
+  // Check if pixel already exists
+  const existingPixelIndex = pixels.findIndex(p => p.x === x && p.y === y);
+  
+  if (existingPixelIndex !== -1) {
+    // Update existing pixel
+    pixels[existingPixelIndex] = { x, y, color, timestamp: Date.now() };
+  } else {
+    // Add new pixel
+    pixels.push({ x, y, color, timestamp: Date.now() });
+  }
+  
+  res.status(201).json({ success: true });
+});
+
 // Health check endpoint for Render
 app.get('/health', (req, res) => {
   res.status(200).json({ 
