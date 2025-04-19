@@ -1100,12 +1100,14 @@ app.post('/api/pixels', (req, res) => {
   // Check if pixel already exists
   const existingPixelIndex = pixels.findIndex(p => p.x === x && p.y === y);
   
+  const timestamp = Date.now();
+  
   if (existingPixelIndex !== -1) {
     // Update existing pixel
-    pixels[existingPixelIndex] = { x, y, color, timestamp: Date.now() };
+    pixels[existingPixelIndex] = { x, y, color, timestamp };
   } else {
     // Add new pixel
-    pixels.push({ x, y, color, timestamp: Date.now() });
+    pixels.push({ x, y, color, timestamp });
   }
   
   res.status(201).json({ success: true });

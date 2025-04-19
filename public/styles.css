@@ -304,17 +304,41 @@ footer {
   justify-content: space-between;
   align-items: center;
   border-top: 1px solid #ddd;
+  min-height: 120px;
 }
 
 #color-picker {
-  width: 30px;
+  width: 50px;
   height: 30px;
   padding: 0;
   border: none;
   cursor: pointer;
+  margin-left: 10px;
 }
 
 #cooldown-timer {
   font-size: 14px;
   color: #666;
+  margin-top: 10px;
+}
+
+#color-presets {
+  margin-top: 5px;
+}
+
+#color-presets div {
+  border-radius: 3px;
+  transition: transform 0.1s;
+}
+
+#color-presets div:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+}
+
+#pixel-tooltip {
+  pointer-events: none;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  max-width: 250px;
+  white-space: nowrap;
 } 

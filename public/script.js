@@ -119,6 +119,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let canPlacePixel = true;
     let cooldownSeconds = 0;
     let cooldownInterval;
+    let pixelRefreshInterval;
+    let pixelsData = []; // Store pixel data including timestamps
+    let tooltipElement;
     
     // Initialize canvas
     function initCanvas() {
@@ -129,8 +132,123 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.fillStyle = 'white';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
+        // Create tooltip element if it doesn't exist
+        if (!tooltipElement) {
+            tooltipElement = document.createElement('div');
+            tooltipElement.id = 'pixel-tooltip';
+            tooltipElement.style.position = 'absolute';
+            tooltipElement.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+            tooltipElement.style.color = 'white';
+            tooltipElement.style.padding = '5px 10px';
+            tooltipElement.style.borderRadius = '4px';
+            tooltipElement.style.fontSize = '12px';
+            tooltipElement.style.pointerEvents = 'none';
+            tooltipElement.style.zIndex = '1000';
+            tooltipElement.style.display = 'none';
+            document.body.appendChild(tooltipElement);
+        }
+        
+        // Add default color presets
+        setupColorPresets();
+        
         // Load existing pixels
         fetchPixels();
+        
+        // Start periodic pixel refresh
+        startPixelRefresh();
+    }
+    
+    // Setup color presets for easier selection
+    function setupColorPresets() {
+        const colorPresets = document.getElementById('color-presets');
+        
+        // If color presets container doesn't exist, create it
+        if (!colorPresets) {
+            const toolsDiv = document.getElementById('pixel-canvas-tools');
+            
+            // Create color presets container
+            const presetsContainer = document.createElement('div');
+            presetsContainer.id = 'color-presets';
+            presetsContainer.style.display = 'flex';
+            presetsContainer.style.flexWrap = 'wrap';
+            presetsContainer.style.maxWidth = '200px';
+            presetsContainer.style.gap = '5px';
+            
+            // Popular colors array
+            const colors = [
+                '#000000', '#FFFFFF', '#FF0000', '#00FF00', '#0000FF',
+                '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#800080',
+                '#008000', '#800000', '#808080', '#FFC0CB', '#A52A2A'
+            ];
+            
+            // Create color preset buttons
+            colors.forEach(color => {
+                const colorBtn = document.createElement('div');
+                colorBtn.style.width = '20px';
+                colorBtn.style.height = '20px';
+                colorBtn.style.backgroundColor = color;
+                colorBtn.style.cursor = 'pointer';
+                colorBtn.style.border = '1px solid #ccc';
+                
+                // Set color on click
+                colorBtn.addEventListener('click', () => {
+                    colorPicker.value = color;
+                });
+                
+                presetsContainer.appendChild(colorBtn);
+            });
+            
+            // Create color presets label
+            const presetsLabel = document.createElement('div');
+            presetsLabel.textContent = 'Preset Colors:';
+            presetsLabel.style.width = '100%';
+            presetsLabel.style.marginBottom = '5px';
+            presetsLabel.style.fontSize = '12px';
+            
+            // Update tools layout
+            toolsDiv.style.flexDirection = 'column';
+            toolsDiv.style.alignItems = 'flex-start';
+            
+            // Add elements to DOM
+            const colorSection = document.createElement('div');
+            colorSection.style.display = 'flex';
+            colorSection.style.alignItems = 'center';
+            colorSection.style.width = '100%';
+            colorSection.style.justifyContent = 'space-between';
+            colorSection.style.marginBottom = '8px';
+            
+            const colorPickerLabel = document.createElement('label');
+            colorPickerLabel.textContent = 'Select Color:';
+            colorPickerLabel.style.fontSize = '14px';
+            
+            colorSection.appendChild(colorPickerLabel);
+            colorSection.appendChild(colorPicker);
+            
+            toolsDiv.insertBefore(colorSection, cooldownTimer);
+            toolsDiv.insertBefore(presetsLabel, cooldownTimer);
+            toolsDiv.insertBefore(presetsContainer, cooldownTimer);
+        }
+    }
+    
+    // Start periodic refresh of pixels
+    function startPixelRefresh() {
+        // Clear any existing interval
+        if (pixelRefreshInterval) {
+            clearInterval(pixelRefreshInterval);
+        }
+        
+        // Set up new interval to fetch pixels every 5 seconds
+        pixelRefreshInterval = setInterval(() => {
+            fetchPixels();
+        }, 5000);
+    }
+    
+    // Stop periodic refresh of pixels
+    function stopPixelRefresh() {
+        if (pixelRefreshInterval) {
+            clearInterval(pixelRefreshInterval);
+            pixelRefreshInterval = null;
+        }
     }
     
     // Show pixel canvas
@@ -142,6 +260,57 @@ document.addEventListener('DOMContentLoaded', () => {
     // Close pixel canvas
     closeCanvasButton.addEventListener('click', () => {
         pixelCanvasContainer.style.display = 'none';
+        stopPixelRefresh();
+        
+        // Hide tooltip if visible
+        if (tooltipElement) {
+            tooltipElement.style.display = 'none';
+        }
+    });
+    
+    // Handle mouse movement for tooltips
+    canvas.addEventListener('mousemove', (e) => {
+        if (!tooltipElement) return;
+        
+        const rect = canvas.getBoundingClientRect();
+        const x = Math.floor((e.clientX - rect.left) / PIXEL_SIZE);
+        const y = Math.floor((e.clientY - rect.top) / PIXEL_SIZE);
+        
+        // Find pixel data for this position
+        const pixelData = pixelsData.find(p => p.x === x && p.y === y);
+        
+        if (pixelData && pixelData.timestamp) {
+            // Convert timestamp to Eastern Time
+            const date = new Date(pixelData.timestamp);
+            const options = { 
+                timeZone: 'America/New_York',
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true
+            };
+            
+            const estTime = date.toLocaleString('en-US', options);
+            
+            // Show tooltip
+            tooltipElement.textContent = `Placed on: ${estTime} (EST)`;
+            tooltipElement.style.display = 'block';
+            tooltipElement.style.left = `${e.clientX + 10}px`;
+            tooltipElement.style.top = `${e.clientY + 10}px`;
+        } else {
+            // Hide tooltip if no pixel data found
+            tooltipElement.style.display = 'none';
+        }
+    });
+    
+    // Hide tooltip when mouse leaves canvas
+    canvas.addEventListener('mouseleave', () => {
+        if (tooltipElement) {
+            tooltipElement.style.display = 'none';
+        }
     });
     
     // Place a pixel
@@ -196,10 +365,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch('/api/pixels');
             if (!response.ok) throw new Error('Failed to fetch pixels');
             
-            const pixels = await response.json();
+            pixelsData = await response.json();
             
             // Draw all pixels
-            pixels.forEach(pixel => {
+            pixelsData.forEach(pixel => {
                 ctx.fillStyle = pixel.color;
                 ctx.fillRect(pixel.x * PIXEL_SIZE, pixel.y * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
             });
