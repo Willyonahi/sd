@@ -223,6 +223,228 @@ const faultCodeDatabase = {
       'Update or reinstall firmware'
     ],
     safety: 'Disconnect power before opening device. Be aware of capacitors that may retain charge.'
+  },
+  
+  // Additional OBD codes from specialized websites
+  'P0301': {
+    description: 'Cylinder 1 Misfire Detected',
+    causes: [
+      'Faulty spark plug or ignition coil in cylinder 1',
+      'Fuel injector problem in cylinder 1',
+      'Low compression in cylinder 1',
+      'Vacuum leak near cylinder 1 intake port',
+      'EGR valve leaking or stuck open',
+      'Camshaft position sensor malfunction'
+    ],
+    solutions: [
+      'Replace spark plug and/or ignition coil for cylinder 1',
+      'Clean or replace fuel injector for cylinder 1',
+      'Perform compression test and repair if necessary',
+      'Check for and repair vacuum leaks',
+      'Inspect and replace EGR valve if necessary',
+      'Check and replace camshaft position sensor if defective'
+    ],
+    safety: 'Disconnect battery before working on ignition components. Ensure engine is cool before starting work.'
+  },
+  'P0302': {
+    description: 'Cylinder 2 Misfire Detected',
+    causes: [
+      'Faulty spark plug or ignition coil in cylinder 2',
+      'Fuel injector problem in cylinder 2',
+      'Low compression in cylinder 2',
+      'Vacuum leak near cylinder 2 intake port',
+      'Camshaft timing issue',
+      'Worn valve guides or seats'
+    ],
+    solutions: [
+      'Replace spark plug and/or ignition coil for cylinder 2',
+      'Clean or replace fuel injector for cylinder 2',
+      'Perform compression test and repair if necessary',
+      'Check for and repair vacuum leaks',
+      'Verify camshaft timing and adjust if needed',
+      'Inspect valves and repair if damaged'
+    ],
+    safety: 'Disconnect battery before working on ignition components. Follow proper torque specifications when reinstalling parts.'
+  },
+  'P0102': {
+    description: 'Mass Air Flow (MAF) Sensor Circuit Low Input',
+    causes: [
+      'Dirty or contaminated MAF sensor',
+      'Damaged MAF sensor wiring or connector',
+      'Faulty MAF sensor',
+      'Air intake leaks before MAF sensor',
+      'Engine control module (ECM) failure',
+      'Clogged air filter'
+    ],
+    solutions: [
+      'Clean MAF sensor with specialized cleaner',
+      'Inspect and repair damaged wiring or connectors',
+      'Replace MAF sensor if faulty',
+      'Check for and repair air intake leaks',
+      'Verify ECM operation and update/replace if necessary',
+      'Replace air filter if dirty'
+    ],
+    safety: 'Disconnect battery before working on electrical components. Use only designated MAF sensor cleaner to avoid damage.'
+  },
+  'P0128': {
+    description: 'Coolant Temperature Below Thermostat Regulating Temperature',
+    causes: [
+      'Faulty thermostat (stuck open)',
+      'Low coolant level',
+      'Bad coolant temperature sensor',
+      'Damaged cooling fan relay or control circuit',
+      'Faulty water pump',
+      'Engine control module (ECM) issues'
+    ],
+    solutions: [
+      'Replace thermostat',
+      'Check coolant level and add if needed',
+      'Test and replace coolant temperature sensor if faulty',
+      'Inspect cooling fan operation and repair as needed',
+      'Check water pump function and replace if necessary',
+      'Test ECM and update/replace if required'
+    ],
+    safety: 'Only work on a cool engine. Wear gloves when handling coolant as it is toxic. Properly dispose of used coolant.'
+  },
+  'P0401': {
+    description: 'Exhaust Gas Recirculation (EGR) Flow Insufficient',
+    causes: [
+      'Clogged EGR passages or ports',
+      'Faulty EGR valve',
+      'Carbon buildup in EGR system',
+      'Damaged EGR valve control solenoid',
+      'Failed EGR temperature sensor',
+      'Vacuum leak in EGR system'
+    ],
+    solutions: [
+      'Clean EGR passages and ports',
+      'Replace EGR valve if damaged or stuck',
+      'Remove carbon deposits from EGR system',
+      'Check and replace EGR valve control solenoid if faulty',
+      'Test and replace EGR temperature sensor if needed',
+      'Repair vacuum leaks in EGR system'
+    ],
+    safety: 'Work in a well-ventilated area when cleaning EGR components. Use appropriate eye protection.'
+  },
+  'P0440': {
+    description: 'Evaporative Emission Control System Malfunction',
+    causes: [
+      'Loose or missing gas cap',
+      'Damaged fuel tank pressure sensor',
+      'Faulty purge or vent solenoid',
+      'Cracked or damaged EVAP system hoses',
+      'Leaking charcoal canister',
+      'Fuel tank leaks'
+    ],
+    solutions: [
+      'Check and replace gas cap if necessary',
+      'Test and replace fuel tank pressure sensor if faulty',
+      'Inspect and replace purge or vent solenoid if damaged',
+      'Check for and replace damaged EVAP hoses',
+      'Replace charcoal canister if leaking',
+      'Inspect fuel tank for leaks and repair as needed'
+    ],
+    safety: 'Avoid sparks or open flames when working on fuel system components. Work in a well-ventilated area.'
+  },
+  'P0455': {
+    description: 'Evaporative Emission Control System Leak Detected (Large Leak)',
+    causes: [
+      'Missing or loose fuel cap',
+      'Disconnected or damaged EVAP hoses',
+      'Faulty purge valve',
+      'Cracked charcoal canister',
+      'Damaged fuel tank',
+      'Faulty fuel tank pressure sensor'
+    ],
+    solutions: [
+      'Check and tighten or replace fuel cap',
+      'Inspect and reconnect or replace EVAP hoses',
+      'Test and replace purge valve if necessary',
+      'Replace cracked charcoal canister',
+      'Inspect and repair fuel tank if damaged',
+      'Check and replace fuel tank pressure sensor if faulty'
+    ],
+    safety: 'Ensure no smoking or open flames when working on fuel system components. Work in a well-ventilated area.'
+  },
+  'P0442': {
+    description: 'Evaporative Emission Control System Leak Detected (Small Leak)',
+    causes: [
+      'Loose fuel cap',
+      'Small crack in EVAP hose',
+      'Faulty purge valve or vent valve',
+      'Minor leak in charcoal canister',
+      'Damaged o-rings or seals in EVAP system',
+      'Fuel tank pressure sensor problems'
+    ],
+    solutions: [
+      'Check and properly tighten fuel cap',
+      'Inspect and replace any cracked EVAP hoses',
+      'Test and replace purge valve or vent valve if necessary',
+      'Replace charcoal canister if leaking',
+      'Replace damaged o-rings or seals',
+      'Test and replace fuel tank pressure sensor if faulty'
+    ],
+    safety: 'Avoid sources of ignition when working on the EVAP system. Ensure proper ventilation.'
+  },
+  'B1000': {
+    description: 'Driver\'s Airbag Module Resistance Too High',
+    causes: [
+      'Poor connection in airbag wiring harness',
+      'Damaged clock spring',
+      'Faulty driver\'s airbag module',
+      'Airbag system short circuit',
+      'SRS control module issues',
+      'Wiring harness damage'
+    ],
+    solutions: [
+      'Check and repair airbag wiring connections',
+      'Replace clock spring if damaged',
+      'Test and replace driver\'s airbag module if faulty',
+      'Repair any short circuits in the system',
+      'Check and replace SRS control module if necessary',
+      'Inspect and repair wiring harness'
+    ],
+    safety: 'Disconnect battery and wait at least 10 minutes before working on airbag components to avoid accidental deployment.'
+  },
+  'C0035': {
+    description: 'Left Front Wheel Speed Sensor Circuit Malfunction',
+    causes: [
+      'Damaged wheel speed sensor',
+      'Debris on wheel speed sensor',
+      'Broken wiring in wheel speed sensor circuit',
+      'Poor connection at wheel speed sensor',
+      'ABS control module failure',
+      'Damaged tone ring'
+    ],
+    solutions: [
+      'Replace wheel speed sensor if damaged',
+      'Clean debris from wheel speed sensor',
+      'Repair broken wiring in sensor circuit',
+      'Check and repair connections at sensor',
+      'Test and replace ABS control module if necessary',
+      'Inspect and replace tone ring if damaged'
+    ],
+    safety: 'Ensure vehicle is properly supported before working under it. Use jack stands for safety.'
+  },
+  'U0101': {
+    description: 'Lost Communication with Transmission Control Module (TCM)',
+    causes: [
+      'Damaged wiring between ECM and TCM',
+      'Poor connection at TCM',
+      'Faulty TCM',
+      'CAN bus circuit issues',
+      'ECM failure',
+      'Power supply issue to TCM'
+    ],
+    solutions: [
+      'Inspect and repair wiring between ECM and TCM',
+      'Check and clean connections at TCM',
+      'Test and replace TCM if faulty',
+      'Diagnose and repair CAN bus circuit issues',
+      'Verify ECM operation and replace if necessary',
+      'Check power supply to TCM and repair as needed'
+    ],
+    safety: 'Disconnect battery before working on electrical components. Use proper diagnostic tools to avoid damage.'
   }
 };
 
@@ -351,6 +573,98 @@ const simulatedAIResponses = {
   }
 };
 
+// Add OBD code website references for scraping
+const obdCodeWebsites = [
+  {
+    name: 'OBD-Codes.com',
+    url: 'https://www.obd-codes.com/p',
+    pattern: code => `https://www.obd-codes.com/p${code.substring(1)}`,
+    applicable: code => code.startsWith('P') && !isNaN(parseInt(code.substring(1))),
+    selector: {
+      description: '.intext > h2:first-of-type, .intext > p:nth-of-type(1)',
+      causes: '.intext > ul:nth-of-type(1)',
+      solutions: '.intext > ul:nth-of-type(2), .intext > p:nth-of-type(3) + ul'
+    }
+  },
+  {
+    name: 'AutoCodes.com',
+    url: 'https://www.autocodes.com/p',
+    pattern: code => `https://www.autocodes.com/${code.toLowerCase()}.html`,
+    applicable: code => /^[PBCU][0-9]{4}$/.test(code),
+    selector: {
+      description: '.entry-content > p:nth-of-type(1)',
+      causes: '.entry-content > ul:nth-of-type(1), .causes-list',
+      solutions: '.entry-content > ul:nth-of-type(2), .solutions-list'
+    }
+  },
+  {
+    name: 'OBD2AI.com',
+    url: 'https://obd2ai.com/free-obd2-code-lookup-tool',
+    pattern: code => `https://obd2ai.com/p${code.substring(1)}`,
+    applicable: code => code.startsWith('P') && !isNaN(parseInt(code.substring(1))),
+    selector: {
+      description: '.entry-content > p:nth-child(1)',
+      causes: '.entry-content > h3:contains("Possible Causes") + ul',
+      solutions: '.entry-content > h3:contains("Solutions") + ul'
+    }
+  },
+  {
+    name: 'DTCSearch.com',
+    url: 'https://www.dtcsearch.com',
+    pattern: code => `https://www.dtcsearch.com/index.php?action=search&dtccode=${code}`,
+    applicable: code => /^[PBCU][0-9]{4}$/.test(code),
+    selector: {
+      description: '.code-description',
+      causes: '.possible-causes ul',
+      solutions: '.solutions ul'
+    }
+  },
+  {
+    name: 'OBD2Site.com',
+    url: 'https://www.obd2site.com/code-lookup',
+    pattern: code => `https://www.obd2site.com/code-lookup/${code}`,
+    applicable: code => /^[PBCU][0-9]{4}$/.test(code),
+    selector: {
+      description: '.code-info p:first-of-type',
+      causes: '.causes-list',
+      solutions: '.solutions-list'
+    }
+  },
+  {
+    name: 'RepairPal.com',
+    url: 'https://repairpal.com/obd-ii-code-chart',
+    pattern: code => `https://repairpal.com/obd-ii-code-chart/${code.toLowerCase()}`,
+    applicable: code => /^[PBCU][0-9]{4}$/.test(code),
+    selector: {
+      description: '.code-description',
+      causes: '.code-details ul:first-of-type',
+      solutions: '.code-details ul:last-of-type'
+    }
+  },
+  {
+    name: 'Innova.com',
+    url: 'https://www.innova.com/pages/dtc-library',
+    pattern: code => `https://www.innova.com/pages/dtc-library?code=${code}`,
+    applicable: code => /^[PBCU][0-9]{4}$/.test(code),
+    selector: {
+      description: '.code-detail h2 + p',
+      causes: '.common-causes ul',
+      solutions: '.recommended-fixes ul'
+    }
+  },
+  {
+    name: 'OBDAdvisor.com',
+    url: 'https://obdadvisor.com/codes',
+    pattern: code => `https://obdadvisor.com/codes/${code.toLowerCase()}`,
+    applicable: code => /^[PBCU][0-9]{4}$/.test(code),
+    selector: {
+      description: '.code-meaning',
+      causes: '.code-causes ul',
+      solutions: '.code-solutions ul'
+    }
+  }
+];
+
 // Function to generate a simulated AI response
 function generateSimulatedAIResponse(equipment, code) {
   // Determine the category based on the first character of the code
@@ -404,11 +718,98 @@ Note: This information is provided as a general guide. For accurate diagnosis an
   return analysis;
 }
 
+// Function to scrape fault code information from specialized OBD websites
+async function scrapeOBDCodeInfo(code) {
+  // Normalize the code to uppercase
+  const normalizedCode = code.toUpperCase();
+  
+  // Find applicable websites for this code
+  const applicableWebsites = obdCodeWebsites.filter(site => site.applicable(normalizedCode));
+  
+  if (applicableWebsites.length === 0) {
+    console.log(`No specialized OBD websites available for code: ${normalizedCode}`);
+    return null;
+  }
+  
+  // Try each website until we find information
+  for (const site of applicableWebsites) {
+    try {
+      console.log(`Attempting to scrape from ${site.name}...`);
+      
+      // Generate the URL for this code
+      const url = site.pattern(normalizedCode);
+      
+      // Make the request with a user agent to avoid being blocked
+      const response = await axios.get(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        },
+        timeout: 5000 // 5 second timeout
+      });
+      
+      // Parse the HTML response
+      const $ = cheerio.load(response.data);
+      
+      // Extract information using the site's selectors
+      let description = $(site.selector.description).first().text().trim();
+      
+      // Extract causes
+      const causes = [];
+      $(site.selector.causes).find('li').each((i, el) => {
+        causes.push($(el).text().trim());
+      });
+      
+      // Extract solutions
+      const solutions = [];
+      $(site.selector.solutions).find('li').each((i, el) => {
+        solutions.push($(el).text().trim());
+      });
+      
+      // If we found some information, return it
+      if (description || causes.length > 0 || solutions.length > 0) {
+        console.log(`Successfully scraped data from ${site.name}`);
+        return {
+          description: description || `Fault code ${normalizedCode}`,
+          causes: causes.length > 0 ? causes : ['Information not available'],
+          solutions: solutions.length > 0 ? solutions : ['Information not available'],
+          source: url
+        };
+      }
+    } catch (error) {
+      console.error(`Error scraping from ${site.name}:`, error.message);
+      // Continue to the next site if there's an error
+    }
+  }
+  
+  // If all specialized sites failed, return null
+  console.log(`Failed to find information on specialized OBD websites for: ${normalizedCode}`);
+  return null;
+}
+
 // Function to scrape fault code information from the web
 async function scrapeFaultCodeInfo(code, equipment) {
   try {
     // Normalize the code for searching
     const searchCode = code.toUpperCase();
+    
+    // First, check if this is an OBD code (starts with P, B, C, or U followed by numbers)
+    if (/^[PBCU][0-9]{4}$/.test(searchCode) && 
+        (equipment.toLowerCase().includes('car') || 
+         equipment.toLowerCase().includes('truck') || 
+         equipment.toLowerCase().includes('vehicle') ||
+         equipment.toLowerCase().includes('automotive') ||
+         equipment.toLowerCase().includes('engine') ||
+         equipment.toLowerCase().includes('motor'))) {
+      
+      // Try to get information from specialized OBD code websites first
+      const obdInfo = await scrapeOBDCodeInfo(searchCode);
+      if (obdInfo) {
+        return obdInfo;
+      }
+    }
+    
+    // If the specialized scraping fails or this isn't an OBD code,
+    // continue with the general web search method
     
     // Convert equipment to lowercase for easier matching
     const equipmentLower = equipment.toLowerCase();
