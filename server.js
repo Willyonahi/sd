@@ -4,14 +4,21 @@ const cors = require('cors');
 const path = require('path');
 const axios = require('axios');
 const cheerio = require('cheerio');
+const config = require('./config');
+const { OpenAI } = require('openai');
 
 const app = express();
-const port = process.env.PORT || 10000;
+const port = config.server.port;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Set up OpenAI client
+const openai = new OpenAI({
+  apiKey: config.openai.apiKey
+});
 
 // Local database of common fault codes
 const faultCodeDatabase = {
@@ -1128,9 +1135,9 @@ app.get('/health', (req, res) => {
 const ipLogs = [];
 const MAX_IP_LOGS = 1000; // Limit storage to prevent memory issues
 
-// Admin credentials - in production, use environment variables and proper hashing
-const ADMIN_USERNAME = "Admin";
-const ADMIN_PASSWORD = "Root64";
+// Admin credentials from config
+const ADMIN_USERNAME = config.admin.username;
+const ADMIN_PASSWORD = config.admin.password;
 
 // Middleware to log IP addresses
 app.use((req, res, next) => {
@@ -1317,91 +1324,231 @@ app.post('/admin/ban-ip', (req, res) => {
   }
 });
 
-// API endpoint for fault code analysis
-app.post('/api/analyze', async (req, res) => {
+// Function to fetch fault code information from an API
+async function fetchFaultCodeFromAPI(code, equipment) {
   try {
-    const { equipment, code } = req.body;
+    console.log(`Fetching fault code ${code} for ${equipment} from API`);
     
-    if (!equipment || !code) {
-      return res.status(400).json({ error: 'Equipment and code are required' });
+    // Get API configuration from config file
+    const API_URL = config.api.faultCodeUrl;
+    const API_KEY = config.api.faultCodeKey;
+    
+    // Check if API key is configured
+    if (!API_KEY) {
+      console.warn('API key not configured. Falling back to local database.');
+      return null;
+    }
+    
+    // Make the API request
+    const response = await axios.get(`${API_URL}/lookup`, {
+      params: {
+        code: code,
+        equipment: equipment
+      },
+      headers: {
+        'Authorization': `Bearer ${API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      timeout: config.api.timeout
+    });
+    
+    // Check if the API returned valid data
+    if (response.data && response.data.success) {
+      return {
+        description: response.data.description || `Fault code ${code} for ${equipment}`,
+        causes: response.data.causes || ['Information not available from API'],
+        solutions: response.data.solutions || ['Information not available from API'],
+        severity: response.data.severity || 'Not specified',
+        manufacturer: response.data.manufacturer || equipment,
+        source: 'API Lookup'
+      };
+    }
+    
+    // If the API doesn't have information on this code, return null
+    return null;
+  } catch (error) {
+    console.error('Error fetching from fault code API:', error.message);
+    // Return null to indicate the API lookup failed
+    return null;
+  }
+}
+
+// Function to use OpenAI to analyze a fault code
+async function analyzeFaultCodeWithAI(code, existingDescription = null, equipment = 'car') {
+  if (!config.openai.apiKey) {
+    console.log('OpenAI API key not configured');
+    return null;
+  }
+
+  try {
+    let prompt = `Analyze ${equipment} fault code ${code} and provide a detailed explanation of:
+1. What this fault code means
+2. Possible causes
+3. Recommended diagnostic steps
+4. Potential repair solutions
+5. Estimated repair difficulty (Easy, Moderate, Hard)
+6. Estimated repair cost range
+7. Safety precautions when addressing this issue`;
+
+    if (existingDescription) {
+      prompt += `\n\nI already have this basic information about the code: "${existingDescription}"\nPlease enhance and expand upon this information.`;
     }
 
-    // Normalize the code to uppercase for case-insensitive matching
-    const normalizedCode = code.toUpperCase();
+    const response = await openai.chat.completions.create({
+      model: config.openai.model,
+      messages: [
+        { role: 'system', content: `You are an expert diagnostic technician specializing in analyzing and explaining fault codes for ${equipment}.` },
+        { role: 'user', content: prompt }
+      ],
+      max_tokens: config.openai.maxTokens,
+      temperature: config.openai.temperature,
+    });
+
+    return {
+      code,
+      description: response.choices[0].message.content,
+      source: 'openai',
+      enhanced: true,
+      analysis: response.choices[0].message.content
+    };
+  } catch (error) {
+    console.error('Error using OpenAI API:', error.message);
+    return null;
+  }
+}
+
+// Update the existing analyze endpoint to incorporate OpenAI analysis
+app.post('/api/analyze', async (req, res) => {
+  const code = req.body.code;
+  const equipment = req.body.equipment || 'car';
+
+  if (!code) {
+    return res.status(400).json({ error: 'No fault code provided' });
+  }
+
+  try {
+    // Always use OpenAI for analysis
+    const result = await analyzeFaultCodeWithAI(code, null, equipment);
     
-    // First check if we have the code in our database
-    if (faultCodeDatabase[normalizedCode]) {
-      const faultInfo = faultCodeDatabase[normalizedCode];
-      
-      // Format the response
-      const analysis = `
-Issue Description:
-${faultInfo.description}
-
-Possible Causes:
-${faultInfo.causes.map(cause => `- ${cause}`).join('\n')}
-
-Recommended Solutions:
-${faultInfo.solutions.map(solution => `- ${solution}`).join('\n')}
-
-Safety Precautions:
-${faultInfo.safety}
-
-Note: This information is provided as a general guide. Always consult your equipment's service manual for specific procedures.
-      `;
-      
-      res.json({ analysis });
+    if (result) {
+      res.json(result);
     } else {
-      // Simulate a delay to make it seem like we're processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Fall back to other methods if OpenAI fails
+      const apiResult = await fetchFaultCodeFromAPI(code, equipment);
       
-      // Try to scrape information from the web
-      const scrapedInfo = await scrapeFaultCodeInfo(code, equipment);
-      
-      if (scrapedInfo) {
-        // Format the scraped information with manufacturer info if available
-        const manufacturerInfo = scrapedInfo.manufacturer ? 
-          `Manufacturer: ${scrapedInfo.manufacturer}\n` : '';
-        
-        const severityInfo = scrapedInfo.severity && scrapedInfo.severity !== 'Not specified' ? 
-          `Severity: ${scrapedInfo.severity}\n` : '';
-        
-        const analysis = `
-Fault Code Analysis for ${equipment} - Code: ${code}
-
-${manufacturerInfo}${severityInfo}
-Issue Description:
-${scrapedInfo.description}
-
-Possible Causes:
-${scrapedInfo.causes.map(cause => `- ${cause}`).join('\n')}
-
-Recommended Solutions:
-${scrapedInfo.solutions.map(solution => `- ${solution}`).join('\n')}
-
-Safety Precautions:
-- Always follow proper safety procedures when working on equipment
-- Ensure power is disconnected before working on electrical components
-- Use appropriate personal protective equipment
-- Follow manufacturer-specific safety guidelines
-
-Source: ${scrapedInfo.source}
-
-Note: This information is provided as a general guide. For accurate diagnosis and repair, please consult your equipment's service manual or a qualified technician.
-        `;
-        
-        res.json({ analysis });
+      if (apiResult) {
+        res.json(apiResult);
       } else {
-        // If scraping failed, generate a simulated response
-        const analysis = generateSimulatedAIResponse(equipment, code);
-        res.json({ analysis });
+        const scrapedResult = await scrapeFaultCodeInfo(code, equipment);
+        
+        if (scrapedResult) {
+          res.json(scrapedResult);
+        } else {
+          res.status(404).json({
+            error: 'Could not find information for this fault code',
+            code: code
+          });
+        }
       }
     }
   } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({ 
-      error: 'Failed to analyze fault code',
-      details: error.message
+    console.error('Error analyzing fault code:', error);
+    res.status(500).json({
+      error: 'An error occurred while analyzing the fault code',
+      code: code
+    });
+  }
+});
+
+// Add a direct ChatGPT integration function
+async function getDirectChatGPTAnalysis(equipment, code) {
+  try {
+    const apiKey = config.openai.apiKey;
+    
+    if (!apiKey) {
+      console.log('OpenAI API key not configured');
+      return {
+        error: "OpenAI API key not configured"
+      };
+    }
+    
+    console.log(`Sending direct request to OpenAI API for ${code} (${equipment})`);
+    
+    const requestData = {
+      model: config.openai.model,
+      messages: [
+        { 
+          role: "system", 
+          content: `You are an expert diagnostic technician specializing in analyzing and explaining fault codes for ${equipment}.` 
+        },
+        { 
+          role: "user", 
+          content: `Analyze ${equipment} fault code ${code} and provide a detailed explanation of:
+1. What this fault code means
+2. Possible causes
+3. Recommended diagnostic steps
+4. Potential repair solutions
+5. Estimated repair difficulty (Easy, Moderate, Hard)
+6. Estimated repair cost range
+7. Safety precautions when addressing this issue` 
+        }
+      ],
+      max_tokens: config.openai.maxTokens,
+      temperature: config.openai.temperature
+    };
+    
+    const response = await axios.post('https://api.openai.com/v1/chat/completions', requestData, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      }
+    });
+    
+    if (response.data && response.data.choices && response.data.choices.length > 0) {
+      return {
+        code,
+        description: response.data.choices[0].message.content,
+        source: 'openai-direct',
+        enhanced: true,
+        analysis: response.data.choices[0].message.content
+      };
+    } else {
+      throw new Error('Invalid response from OpenAI API');
+    }
+  } catch (error) {
+    console.error('Error in direct ChatGPT request:', error.message);
+    return {
+      error: `Error using OpenAI API: ${error.message}`
+    };
+  }
+}
+
+// Add a new endpoint for direct ChatGPT analysis
+app.post('/api/analyze-direct', async (req, res) => {
+  const code = req.body.code;
+  const equipment = req.body.equipment || 'car';
+
+  if (!code) {
+    return res.status(400).json({ error: 'No fault code provided' });
+  }
+
+  try {
+    // Use direct ChatGPT integration
+    const result = await getDirectChatGPTAnalysis(equipment, code);
+    
+    if (result.error) {
+      res.status(500).json({
+        error: result.error,
+        code: code
+      });
+    } else {
+      res.json(result);
+    }
+  } catch (error) {
+    console.error('Error analyzing fault code:', error);
+    res.status(500).json({
+      error: 'An error occurred while analyzing the fault code',
+      code: code
     });
   }
 });

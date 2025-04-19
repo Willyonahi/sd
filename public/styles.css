@@ -341,17 +341,40 @@ footer {
 }
 
 #color-presets {
-  margin-top: 5px;
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 
-#color-presets div {
-  border-radius: 3px;
-  transition: transform 0.1s;
+.color-btn {
+  transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
 }
 
-#color-presets div:hover {
+.color-btn:hover {
   transform: scale(1.1);
-  box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+  z-index: 10;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
+}
+
+.color-btn:active {
+  transform: scale(0.95);
+}
+
+/* Dark colors need white borders for visibility */
+.color-btn[style*="background-color: #000000"],
+.color-btn[style*="background-color: #000080"],
+.color-btn[style*="background-color: #006400"],
+.color-btn[style*="background-color: #800080"] {
+  border-color: #666 !important;
+}
+
+/* Light colors need darker borders */
+.color-btn[style*="background-color: #FFFFFF"],
+.color-btn[style*="background-color: #FFFF00"],
+.color-btn[style*="background-color: #FFC0CB"] {
+  border-color: #999 !important;
 }
 
 #pixel-tooltip {
@@ -359,4 +382,35 @@ footer {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
   max-width: 250px;
   white-space: nowrap;
+}
+
+/* Analysis Result Styling */
+.analysis-result {
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.analysis-result h2 {
+    color: #333;
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 10px;
+}
+
+.analysis-content {
+    line-height: 1.6;
+    font-size: 1rem;
+    color: #444;
+    white-space: pre-wrap;
+}
+
+.analysis-footer {
+    margin-top: 20px;
+    text-align: right;
+    color: #777;
+    font-size: 0.8rem;
 } 

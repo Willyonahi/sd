@@ -68,8 +68,8 @@ document.addEventListener('DOMContentLoaded', () => {
         errorDiv.style.display = 'none';
         
         try {
-            // Send request to server
-            const response = await fetch('/api/analyze', {
+            // Send request to server using the direct ChatGPT integration
+            const response = await fetch('/api/analyze-direct', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -88,14 +88,38 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const data = await response.json();
             
-            // Display result
-            resultDiv.innerHTML = `<pre>${data.analysis}</pre>`;
+            // Display result - prioritize the analysis field from ChatGPT
+            if (data.analysis) {
+                resultDiv.innerHTML = formatAnalysisOutput(data.analysis, code, equipment);
+            } else if (data.description) {
+                resultDiv.innerHTML = `<h2>Analysis for ${code}</h2><pre>${data.description}</pre>`;
+            } else {
+                resultDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            }
             resultDiv.style.display = 'block';
         } catch (error) {
             hideCustomLoading();
             showError(error.message);
         }
     });
+
+    // Function to format the analysis output nicely
+    function formatAnalysisOutput(analysis, code, equipment) {
+        // Replace newlines with HTML line breaks for proper display
+        const formattedAnalysis = analysis.replace(/\n/g, '<br>');
+        
+        return `
+            <div class="analysis-result">
+                <h2>AI Analysis for ${code} (${equipment})</h2>
+                <div class="analysis-content">
+                    ${formattedAnalysis}
+                </div>
+                <div class="analysis-footer">
+                    <small>Analysis provided by AI - ${new Date().toLocaleString()}</small>
+                </div>
+            </div>
+        `;
+    }
 
     // Function to show error message
     function showError(message) {
@@ -156,8 +180,8 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.appendChild(tooltipElement);
         }
         
-        // Add default color presets
-        setupColorPresets();
+        // Add color preset buttons
+        createColorButtons();
         
         // Load existing pixels
         fetchPixels();
@@ -166,76 +190,161 @@ document.addEventListener('DOMContentLoaded', () => {
         startPixelRefresh();
     }
     
-    // Setup color presets for easier selection
-    function setupColorPresets() {
-        const colorPresets = document.getElementById('color-presets');
+    // Create color preset buttons
+    function createColorButtons() {
+        const toolsDiv = document.getElementById('pixel-canvas-tools');
+        const existingPresets = document.getElementById('color-presets');
         
-        // If color presets container doesn't exist, create it
-        if (!colorPresets) {
-            const toolsDiv = document.getElementById('pixel-canvas-tools');
+        // If color presets already exist, don't recreate them
+        if (existingPresets) return;
+        
+        // Create color presets container
+        const colorsContainer = document.createElement('div');
+        colorsContainer.id = 'color-presets';
+        colorsContainer.style.display = 'flex';
+        colorsContainer.style.flexWrap = 'wrap';
+        colorsContainer.style.gap = '5px';
+        colorsContainer.style.marginTop = '10px';
+        colorsContainer.style.width = '100%';
+        
+        // Define common colors to use
+        const colors = [
+            { name: 'Black', value: '#000000' },
+            { name: 'White', value: '#FFFFFF' },
+            { name: 'Red', value: '#FF0000' },
+            { name: 'Green', value: '#00FF00' },
+            { name: 'Blue', value: '#0000FF' },
+            { name: 'Yellow', value: '#FFFF00' },
+            { name: 'Cyan', value: '#00FFFF' },
+            { name: 'Magenta', value: '#FF00FF' },
+            { name: 'Orange', value: '#FFA500' },
+            { name: 'Purple', value: '#800080' },
+            { name: 'Pink', value: '#FFC0CB' },
+            { name: 'Brown', value: '#A52A2A' },
+            { name: 'Gray', value: '#808080' },
+            { name: 'Dark Green', value: '#006400' },
+            { name: 'Navy', value: '#000080' }
+        ];
+        
+        // Add color label
+        const colorLabel = document.createElement('div');
+        colorLabel.textContent = 'Quick Color Selection:';
+        colorLabel.style.width = '100%';
+        colorLabel.style.marginBottom = '5px';
+        colorLabel.style.fontWeight = 'bold';
+        
+        colorsContainer.appendChild(colorLabel);
+        
+        // Create buttons for each color
+        colors.forEach(color => {
+            const colorBtn = document.createElement('button');
+            colorBtn.className = 'color-btn';
+            colorBtn.title = color.name;
+            colorBtn.style.width = '30px';
+            colorBtn.style.height = '30px';
+            colorBtn.style.backgroundColor = color.value;
+            colorBtn.style.border = '2px solid #ccc';
+            colorBtn.style.borderRadius = '4px';
+            colorBtn.style.cursor = 'pointer';
+            colorBtn.style.padding = '0';
+            colorBtn.style.margin = '2px';
             
-            // Create color presets container
-            const presetsContainer = document.createElement('div');
-            presetsContainer.id = 'color-presets';
-            presetsContainer.style.display = 'flex';
-            presetsContainer.style.flexWrap = 'wrap';
-            presetsContainer.style.maxWidth = '200px';
-            presetsContainer.style.gap = '5px';
+            // Add a checkmark to the black button (default)
+            if (color.value === colorPicker.value) {
+                colorBtn.style.border = '2px solid #000';
+                colorBtn.style.boxShadow = '0 0 5px rgba(0,0,0,0.5)';
+                colorBtn.innerHTML = '<span style="color: white; text-shadow: 1px 1px 1px black; display: flex; justify-content: center; align-items: center; height: 100%;">✓</span>';
+            }
             
-            // Popular colors array
-            const colors = [
-                '#000000', '#FFFFFF', '#FF0000', '#00FF00', '#0000FF',
-                '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#800080',
-                '#008000', '#800000', '#808080', '#FFC0CB', '#A52A2A'
-            ];
-            
-            // Create color preset buttons
-            colors.forEach(color => {
-                const colorBtn = document.createElement('div');
-                colorBtn.style.width = '20px';
-                colorBtn.style.height = '20px';
-                colorBtn.style.backgroundColor = color;
-                colorBtn.style.cursor = 'pointer';
-                colorBtn.style.border = '1px solid #ccc';
+            // Set color on click
+            colorBtn.addEventListener('click', () => {
+                // Update color picker
+                colorPicker.value = color.value;
                 
-                // Set color on click
-                colorBtn.addEventListener('click', () => {
-                    colorPicker.value = color;
+                // Update button styles
+                document.querySelectorAll('.color-btn').forEach(btn => {
+                    btn.style.border = '2px solid #ccc';
+                    btn.style.boxShadow = 'none';
+                    btn.innerHTML = '';
                 });
                 
-                presetsContainer.appendChild(colorBtn);
+                // Highlight selected color
+                colorBtn.style.border = '2px solid #000';
+                colorBtn.style.boxShadow = '0 0 5px rgba(0,0,0,0.5)';
+                
+                // Add checkmark - white for dark colors, black for light colors
+                const isDarkColor = isColorDark(color.value);
+                const checkmark = document.createElement('span');
+                checkmark.style.color = isDarkColor ? 'white' : 'black';
+                checkmark.style.textShadow = isDarkColor ? '1px 1px 1px black' : '1px 1px 1px white';
+                checkmark.style.display = 'flex';
+                checkmark.style.justifyContent = 'center';
+                checkmark.style.alignItems = 'center';
+                checkmark.style.height = '100%';
+                checkmark.innerHTML = '✓';
+                
+                colorBtn.appendChild(checkmark);
             });
             
-            // Create color presets label
-            const presetsLabel = document.createElement('div');
-            presetsLabel.textContent = 'Preset Colors:';
-            presetsLabel.style.width = '100%';
-            presetsLabel.style.marginBottom = '5px';
-            presetsLabel.style.fontSize = '12px';
+            colorsContainer.appendChild(colorBtn);
+        });
+        
+        // Add manual picker section
+        const customPickerContainer = document.createElement('div');
+        customPickerContainer.style.display = 'flex';
+        customPickerContainer.style.alignItems = 'center';
+        customPickerContainer.style.marginTop = '10px';
+        customPickerContainer.style.justifyContent = 'space-between';
+        customPickerContainer.style.width = '100%';
+        
+        const customPickerLabel = document.createElement('label');
+        customPickerLabel.textContent = 'Custom Color:';
+        customPickerLabel.htmlFor = 'color-picker';
+        
+        // Move the existing color picker into our new container
+        colorPicker.id = 'color-picker';
+        customPickerContainer.appendChild(customPickerLabel);
+        customPickerContainer.appendChild(colorPicker);
+        
+        // Listen for changes to the color picker
+        colorPicker.addEventListener('input', () => {
+            // When the color picker changes, update buttons
+            const newColor = colorPicker.value;
             
-            // Update tools layout
-            toolsDiv.style.flexDirection = 'column';
-            toolsDiv.style.alignItems = 'flex-start';
-            
-            // Add elements to DOM
-            const colorSection = document.createElement('div');
-            colorSection.style.display = 'flex';
-            colorSection.style.alignItems = 'center';
-            colorSection.style.width = '100%';
-            colorSection.style.justifyContent = 'space-between';
-            colorSection.style.marginBottom = '8px';
-            
-            const colorPickerLabel = document.createElement('label');
-            colorPickerLabel.textContent = 'Select Color:';
-            colorPickerLabel.style.fontSize = '14px';
-            
-            colorSection.appendChild(colorPickerLabel);
-            colorSection.appendChild(colorPicker);
-            
-            toolsDiv.insertBefore(colorSection, cooldownTimer);
-            toolsDiv.insertBefore(presetsLabel, cooldownTimer);
-            toolsDiv.insertBefore(presetsContainer, cooldownTimer);
-        }
+            // Reset all buttons
+            document.querySelectorAll('.color-btn').forEach(btn => {
+                btn.style.border = '2px solid #ccc';
+                btn.style.boxShadow = 'none';
+                btn.innerHTML = '';
+                
+                // If button matches the new color, highlight it
+                if (btn.style.backgroundColor === newColor) {
+                    btn.style.border = '2px solid #000';
+                    btn.style.boxShadow = '0 0 5px rgba(0,0,0,0.5)';
+                    
+                    const isDarkColor = isColorDark(newColor);
+                    btn.innerHTML = `<span style="color: ${isDarkColor ? 'white' : 'black'}; text-shadow: ${isDarkColor ? '1px 1px 1px black' : '1px 1px 1px white'}; display: flex; justify-content: center; align-items: center; height: 100%;">✓</span>`;
+                }
+            });
+        });
+        
+        // Insert the containers before the cooldown timer
+        toolsDiv.insertBefore(customPickerContainer, cooldownTimer);
+        toolsDiv.insertBefore(colorsContainer, cooldownTimer);
+    }
+    
+    // Helper function to determine if a color is dark
+    function isColorDark(hexColor) {
+        // Convert hex to RGB
+        const r = parseInt(hexColor.substr(1, 2), 16);
+        const g = parseInt(hexColor.substr(3, 2), 16);
+        const b = parseInt(hexColor.substr(5, 2), 16);
+        
+        // Calculate perceived brightness (ITU-R BT.709)
+        const brightness = (r * 0.2126 + g * 0.7152 + b * 0.0722);
+        
+        // Return true for dark colors
+        return brightness < 128;
     }
     
     // Start periodic refresh of pixels
