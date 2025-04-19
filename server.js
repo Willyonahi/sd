@@ -576,6 +576,35 @@ const simulatedAIResponses = {
 // Add OBD code website references for scraping
 const obdCodeWebsites = [
   {
+    name: 'FaultCodes.co',
+    url: 'https://faultcodes.co',
+    pattern: (code, manufacturer) => {
+      // Check if manufacturer is provided
+      if (manufacturer) {
+        // Convert manufacturer to lowercase and remove spaces
+        const mfr = manufacturer.toLowerCase().replace(/\s+/g, '-');
+        return `https://faultcodes.co/cars/${mfr}/${code.toLowerCase()}`;
+      }
+      // If no manufacturer, use the general code lookup
+      return `https://faultcodes.co/code/${code.toLowerCase()}`;
+    },
+    applicable: code => /^[PBCU][0-9]{4}$/.test(code),
+    selector: {
+      description: '.code-description, .fault-description h2 + p',
+      causes: '.possible-causes ul, .fault-causes ul',
+      solutions: '.recommended-fixes ul, .fault-solutions ul',
+      severity: '.severity-level'
+    },
+    manufacturerList: [
+      'acura', 'alfa-romeo', 'audi', 'bmw', 'buick', 'cadillac', 'chevrolet', 
+      'chrysler', 'citroen', 'dacia', 'dodge', 'fiat', 'ford', 'gmc', 'honda', 
+      'hyundai', 'infiniti', 'jaguar', 'jeep', 'kia', 'land-rover', 'lexus', 
+      'lincoln', 'mazda', 'mercedes-benz', 'mercury', 'mini', 'mitsubishi', 
+      'nissan', 'opel', 'peugeot', 'pontiac', 'porsche', 'renault', 'saab', 
+      'seat', 'skoda', 'subaru', 'suzuki', 'toyota', 'volkswagen', 'volvo'
+    ]
+  },
+  {
     name: 'OBD-Codes.com',
     url: 'https://www.obd-codes.com/p',
     pattern: code => `https://www.obd-codes.com/p${code.substring(1)}`,
@@ -786,6 +815,106 @@ async function scrapeOBDCodeInfo(code) {
   return null;
 }
 
+// Function to scrape manufacturer-specific fault code information
+async function scrapeManufacturerFaultCodes(code, equipment) {
+  try {
+    // Convert equipment to lowercase for easier matching
+    const equipmentLower = equipment.toLowerCase();
+    
+    // Identify if the equipment matches any manufacturer
+    let manufacturer = null;
+    
+    // Check against manufacturer list from FaultCodes.co
+    const fcSite = obdCodeWebsites.find(site => site.name === 'FaultCodes.co');
+    if (fcSite) {
+      for (const mfr of fcSite.manufacturerList) {
+        // Replace hyphens with spaces for matching
+        const mfrName = mfr.replace(/-/g, ' ');
+        if (equipmentLower.includes(mfrName)) {
+          manufacturer = mfr;
+          break;
+        }
+      }
+      
+      // If no exact match but automotive keywords present, try some common manufacturers
+      if (!manufacturer && 
+          (equipmentLower.includes('car') || 
+           equipmentLower.includes('truck') || 
+           equipmentLower.includes('vehicle') ||
+           equipmentLower.includes('automotive'))) {
+        // Try to find common car brands in the equipment description
+        const commonBrands = ['toyota', 'honda', 'ford', 'chevrolet', 'bmw', 'audi', 'mercedes', 'volkswagen'];
+        for (const brand of commonBrands) {
+          if (equipmentLower.includes(brand)) {
+            manufacturer = brand.replace(/\s+/g, '-');
+            break;
+          }
+        }
+      }
+    }
+    
+    if (manufacturer && fcSite) {
+      console.log(`Attempting to scrape from FaultCodes.co for manufacturer: ${manufacturer}`);
+      
+      // Generate the URL for this code and manufacturer
+      const url = fcSite.pattern(code, manufacturer);
+      
+      try {
+        // Make the request with a user agent to avoid being blocked
+        const response = await axios.get(url, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+          },
+          timeout: 7000 // 7 second timeout
+        });
+        
+        // Parse the HTML response
+        const $ = cheerio.load(response.data);
+        
+        // Extract information using the site's selectors
+        let description = $(fcSite.selector.description).first().text().trim();
+        
+        // Extract causes
+        const causes = [];
+        $(fcSite.selector.causes).find('li').each((i, el) => {
+          causes.push($(el).text().trim());
+        });
+        
+        // Extract solutions
+        const solutions = [];
+        $(fcSite.selector.solutions).find('li').each((i, el) => {
+          solutions.push($(el).text().trim());
+        });
+        
+        // Extract severity if available
+        const severity = $(fcSite.selector.severity).text().trim();
+        
+        // If we found some information, return it
+        if (description || causes.length > 0 || solutions.length > 0) {
+          console.log(`Successfully scraped data from FaultCodes.co for ${manufacturer}`);
+          return {
+            description: description || `Fault code ${code} for ${manufacturer}`,
+            causes: causes.length > 0 ? causes : ['Information not available'],
+            solutions: solutions.length > 0 ? solutions : ['Information not available'],
+            severity: severity || 'Not specified',
+            manufacturer: manufacturer.replace(/-/g, ' '),
+            source: url
+          };
+        }
+      } catch (error) {
+        console.error(`Error scraping from FaultCodes.co for ${manufacturer}:`, error.message);
+        // If we get an error, we'll continue with other scraping methods
+      }
+    }
+    
+    // If manufacturer-specific lookup failed, return null
+    return null;
+  } catch (error) {
+    console.error('Error in manufacturer scraping:', error);
+    return null;
+  }
+}
+
 // Function to scrape fault code information from the web
 async function scrapeFaultCodeInfo(code, equipment) {
   try {
@@ -793,18 +922,27 @@ async function scrapeFaultCodeInfo(code, equipment) {
     const searchCode = code.toUpperCase();
     
     // First, check if this is an OBD code (starts with P, B, C, or U followed by numbers)
-    if (/^[PBCU][0-9]{4}$/.test(searchCode) && 
-        (equipment.toLowerCase().includes('car') || 
-         equipment.toLowerCase().includes('truck') || 
-         equipment.toLowerCase().includes('vehicle') ||
-         equipment.toLowerCase().includes('automotive') ||
-         equipment.toLowerCase().includes('engine') ||
-         equipment.toLowerCase().includes('motor'))) {
+    if (/^[PBCU][0-9]{4}$/.test(searchCode)) {
       
-      // Try to get information from specialized OBD code websites first
-      const obdInfo = await scrapeOBDCodeInfo(searchCode);
-      if (obdInfo) {
-        return obdInfo;
+      // Try to get manufacturer-specific information first
+      const manufacturerInfo = await scrapeManufacturerFaultCodes(searchCode, equipment);
+      if (manufacturerInfo) {
+        return manufacturerInfo;
+      }
+      
+      // Then try the specialized OBD code websites
+      if (equipment.toLowerCase().includes('car') || 
+          equipment.toLowerCase().includes('truck') || 
+          equipment.toLowerCase().includes('vehicle') ||
+          equipment.toLowerCase().includes('automotive') ||
+          equipment.toLowerCase().includes('engine') ||
+          equipment.toLowerCase().includes('motor')) {
+        
+        // Try to get information from specialized OBD code websites
+        const obdInfo = await scrapeOBDCodeInfo(searchCode);
+        if (obdInfo) {
+          return obdInfo;
+        }
       }
     }
     
@@ -993,10 +1131,17 @@ Note: This information is provided as a general guide. Always consult your equip
       const scrapedInfo = await scrapeFaultCodeInfo(code, equipment);
       
       if (scrapedInfo) {
-        // Format the scraped information
+        // Format the scraped information with manufacturer info if available
+        const manufacturerInfo = scrapedInfo.manufacturer ? 
+          `Manufacturer: ${scrapedInfo.manufacturer}\n` : '';
+        
+        const severityInfo = scrapedInfo.severity && scrapedInfo.severity !== 'Not specified' ? 
+          `Severity: ${scrapedInfo.severity}\n` : '';
+        
         const analysis = `
 Fault Code Analysis for ${equipment} - Code: ${code}
 
+${manufacturerInfo}${severityInfo}
 Issue Description:
 ${scrapedInfo.description}
 
