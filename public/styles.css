@@ -262,7 +262,25 @@ footer {
   border: none;
 }
 
-#pixel-canvas-button:hover {
+#admin-button {
+  position: fixed;
+  bottom: 10px;
+  right: 50px;
+  width: 30px;
+  height: 30px;
+  background-color: #dc3545;
+  border-radius: 50%;
+  opacity: 0.4;
+  cursor: pointer;
+  z-index: 100;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: opacity 0.3s;
+  border: none;
+}
+
+#pixel-canvas-button:hover, #admin-button:hover {
   opacity: 1;
 }
 

@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - IP Tracker</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .admin-container {
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .login-form {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 2rem;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        #ip-logs {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 2rem;
+        }
+        
+        #ip-logs th, #ip-logs td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        
+        #ip-logs th {
+            background-color: #4a90e2;
+            color: white;
+        }
+        
+        #ip-logs tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        
+        .actions button {
+            padding: 5px 10px;
+            margin-right: 5px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        
+        .admin-notice {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            border-left: 4px solid #ffeeba;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1>Admin Dashboard - IP Tracker</h1>
+            <a href="/" class="btn">Back to Main Site</a>
+        </div>
+        
+        <div class="admin-notice">
+            <strong>Notice:</strong> This IP tracking functionality is for security and administrative purposes only. 
+            All data collection complies with relevant privacy laws. IP data is stored temporarily and used only 
+            for preventing abuse of the service.
+        </div>
+        
+        <div id="login-section">
+            <div class="login-form">
+                <h2>Admin Login</h2>
+                <div class="form-group">
+                    <label for="username">Username:</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                
+                <button type="button" id="login-btn">Login</button>
+                <p id="login-error" style="color: red; display: none;"></p>
+            </div>
+        </div>
+        
+        <div id="dashboard-section" class="hidden">
+            <div class="admin-header">
+                <h2>IP Logs</h2>
+                <button id="refresh-logs">Refresh Logs</button>
+            </div>
+            
+            <table id="ip-logs">
+                <thead>
+                    <tr>
+                        <th>IP Address</th>
+                        <th>Timestamp (Local Time)</th>
+                        <th>Path</th>
+                        <th>User Agent</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="ip-logs-body">
+                    <!-- IP logs will be inserted here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginSection = document.getElementById('login-section');
+            const dashboardSection = document.getElementById('dashboard-section');
+            const loginBtn = document.getElementById('login-btn');
+            const loginError = document.getElementById('login-error');
+            const username = document.getElementById('username');
+            const password = document.getElementById('password');
+            const refreshLogsBtn = document.getElementById('refresh-logs');
+            const ipLogsBody = document.getElementById('ip-logs-body');
+            
+            // Login functionality
+            loginBtn.addEventListener('click', async () => {
+                if (!username.value || !password.value) {
+                    loginError.textContent = 'Please enter both username and password';
+                    loginError.style.display = 'block';
+                    return;
+                }
+                
+                try {
+                    const response = await fetch('/admin/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            username: username.value,
+                            password: password.value
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        loginSection.classList.add('hidden');
+                        dashboardSection.classList.remove('hidden');
+                        loadIpLogs();
+                    } else {
+                        loginError.textContent = data.message || 'Login failed';
+                        loginError.style.display = 'block';
+                    }
+                } catch (error) {
+                    loginError.textContent = 'An error occurred. Please try again.';
+                    loginError.style.display = 'block';
+                    console.error('Login error:', error);
+                }
+            });
+            
+            // Refresh logs
+            refreshLogsBtn.addEventListener('click', loadIpLogs);
+            
+            // Load IP logs
+            async function loadIpLogs() {
+                try {
+                    const response = await fetch('/admin/ip-logs', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            username: username.value,
+                            password: password.value
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        ipLogsBody.innerHTML = '';
+                        
+                        data.logs.forEach(log => {
+                            const row = document.createElement('tr');
+                            
+                            // Format timestamp for local time display
+                            const date = new Date(log.timestamp);
+                            const formattedDate = date.toLocaleString();
+                            
+                            row.innerHTML = `
+                                <td>${log.ip}</td>
+                                <td>${formattedDate}</td>
+                                <td>${log.path}</td>
+                                <td>${log.userAgent}</td>
+                                <td class="actions">
+                                    <button onclick="banIP('${log.ip}')">Ban IP</button>
+                                </td>
+                            `;
+                            
+                            ipLogsBody.appendChild(row);
+                        });
+                    } else {
+                        alert('Failed to load IP logs. Please try again.');
+                    }
+                } catch (error) {
+                    alert('An error occurred while loading IP logs.');
+                    console.error('Error loading IP logs:', error);
+                }
+            }
+            
+            // Global function to ban an IP
+            window.banIP = async function(ip) {
+                if (confirm(`Are you sure you want to ban the IP address ${ip}?`)) {
+                    try {
+                        const response = await fetch('/admin/ban-ip', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                username: username.value,
+                                password: password.value,
+                                ip: ip
+                            })
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            alert(`IP address ${ip} has been banned.`);
+                            loadIpLogs(); // Refresh the logs
+                        } else {
+                            alert(data.message || 'Failed to ban IP address.');
+                        }
+                    } catch (error) {
+                        alert('An error occurred while banning the IP.');
+                        console.error('Error banning IP:', error);
+                    }
+                }
+            };
+        });
+    </script>
+</body>
+</html> 

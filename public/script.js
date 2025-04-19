@@ -113,6 +113,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const ctx = canvas.getContext('2d');
     const colorPicker = document.getElementById('color-picker');
     const cooldownTimer = document.getElementById('cooldown-timer');
+    const adminButton = document.getElementById('admin-button');
+    
+    // Admin button functionality
+    if (adminButton) {
+        adminButton.addEventListener('click', () => {
+            window.location.href = '/admin.html';
+        });
+    }
     
     const CANVAS_SIZE = 100; // 100x100 pixels
     const PIXEL_SIZE = 5;

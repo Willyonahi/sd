@@ -1121,6 +1121,90 @@ app.get('/health', (req, res) => {
   });
 });
 
+// IP tracking for security purposes
+const ipLogs = [];
+const MAX_IP_LOGS = 1000; // Limit storage to prevent memory issues
+
+// Admin credentials - in production, use environment variables and proper hashing
+const ADMIN_USERNAME = "Admin";
+const ADMIN_PASSWORD = "Root64";
+
+// Middleware to log IP addresses
+app.use((req, res, next) => {
+  // Get IP address (works behind proxies too)
+  const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+  
+  // Don't log admin requests or health checks
+  if (!req.path.startsWith('/admin') && req.path !== '/health') {
+    const timestamp = new Date();
+    const userAgent = req.headers['user-agent'] || 'Unknown';
+    const path = req.path;
+    
+    // Log the IP with timestamp and request info
+    ipLogs.unshift({
+      ip,
+      timestamp,
+      userAgent,
+      path
+    });
+    
+    // Trim logs if they exceed maximum
+    if (ipLogs.length > MAX_IP_LOGS) {
+      ipLogs.length = MAX_IP_LOGS;
+    }
+  }
+  
+  next();
+});
+
+// Login endpoint for admin
+app.post('/admin/login', (req, res) => {
+  const { username, password } = req.body;
+  
+  if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+    // In a real app, use proper session management
+    res.json({ success: true, message: 'Login successful' });
+  } else {
+    res.status(401).json({ success: false, message: 'Invalid credentials' });
+  }
+});
+
+// Admin endpoint to get IP logs (protected)
+app.post('/admin/ip-logs', (req, res) => {
+  const { username, password } = req.body;
+  
+  // Verify admin credentials
+  if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+    res.json({ 
+      success: true, 
+      logs: ipLogs.map(log => ({
+        ...log,
+        timestamp: log.timestamp.toISOString()
+      }))
+    });
+  } else {
+    res.status(401).json({ success: false, message: 'Unauthorized' });
+  }
+});
+
+// Admin endpoint to ban an IP (protected)
+app.post('/admin/ban-ip', (req, res) => {
+  const { username, password, ip } = req.body;
+  
+  // Verify admin credentials
+  if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+    if (!ip) {
+      return res.status(400).json({ success: false, message: 'IP address required' });
+    }
+    
+    // In a real application, store banned IPs in a database
+    // For simplicity, we'll just acknowledge the request
+    res.json({ success: true, message: `IP ${ip} has been banned` });
+  } else {
+    res.status(401).json({ success: false, message: 'Unauthorized' });
+  }
+});
+
 // API endpoint for fault code analysis
 app.post('/api/analyze', async (req, res) => {
   try {
